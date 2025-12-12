@@ -21,34 +21,78 @@
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <!-- Daterange picker -->
   <link rel="stylesheet" href="../../plugins/daterangepicker/daterangepicker.css">
-  <!-- fullCalendar -->
-  <link rel="stylesheet" href="../../plugins/fullcalendar/main.css">
+
 
 
 
   <style>
-    /* Modern Professional Calendar Styling */
+    /* Custom Schedule Styling */
+    .schedule-table-container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      overflow-x: auto;
+      padding: 15px;
+    }
 
-    /* Header background */
-    .fc .fc-toolbar {
-      background-color: #f8f9fa;
-      /* light neutral grey */
+    .table-schedule {
+      margin-bottom: 0;
+      table-layout: fixed;
+      width: 100%;
+      min-width: 800px;
+      /* Ensure it doesn't get too squished */
+    }
+
+    .table-schedule thead th {
+      background-color: #343a40;
+      color: #fff;
+      text-align: center;
+      border: none;
       padding: 10px;
-      border-radius: 15px;
-      border: 1px solid #b1b5b9;
-    }
-
-    /* Header title */
-    .fc .fc-toolbar-title {
-      color: #314457 !important;
       font-weight: 600;
-      font-size: 1.1rem;
     }
 
+    .table-schedule tbody td {
+      vertical-align: top;
+      padding: 10px;
+      background-color: #f8f9fa;
+      height: 300px;
+      /* Minimum height for empty days */
+    }
 
-    /* Today highlight */
-    .fc .fc-daygrid-day.fc-day-today {
-      background-color: #abbdda !important;
+    .schedule-item {
+      background: #fff;
+      border-left: 3px solid #007bff;
+      padding: 8px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .schedule-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .item-subject {
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 2px;
+      font-size: 0.9rem;
+    }
+
+    .item-time {
+      font-size: 0.75rem;
+      color: #6c757d;
+      margin-bottom: 2px;
+    }
+
+    .item-teacher {
+      font-size: 0.8rem;
+      color: #495057;
+      font-style: italic;
     }
   </style>
 </head>
@@ -65,9 +109,9 @@
     <nav class="main-header navbar navbar-expand navbar-dark">
       <!-- Left navbar links -->
       <ul class="navbar-nav">
-        <!-- <li class="nav-item">
+        <li class="nav-item">
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li> -->
+        </li>
         <li class="nav-item d-none d-sm-inline-block">
           <a href="../../index3.html" class="nav-link">Home</a>
         </li>
@@ -153,7 +197,9 @@
           <!-- Main row -->
           <div class="row mt-2">
             <div class="col-12">
-              <div id="calendar"></div>
+              <div id="schedule-view" class="schedule-table-container">
+                <!-- Schedule will be rendered here -->
+              </div>
             </div>
           </div>
           <!-- /.row (main row) -->
@@ -232,150 +278,115 @@
         $("#nav-dashboard").addClass("active");
       });
 
-      var calendarEl = document.getElementById('calendar');
-      var classSelector = document.getElementById('class-selector');
+      const scheduleView = document.getElementById('schedule-view');
+      const classSelector = document.getElementById('class-selector');
 
-      // Define events for each class
-      var classEvents = {
-        classA: [
-          {
-            title: 'Mathematics (Class A)',
-            start: '2025-11-24T09:00:00',
-            end: '2025-11-24T10:30:00',
-            backgroundColor: '#f56954', // red
-            borderColor: '#f56954',
-            allDay: false
-          },
-          {
-            title: 'Physics (Class A)',
-            start: '2025-11-24T11:00:00',
-            end: '2025-11-24T12:30:00',
-            backgroundColor: '#f39c12', // yellow
-            borderColor: '#f39c12',
-            allDay: false
-          },
-          {
-            title: 'Lunch Break',
-            start: '2025-11-24T12:30:00',
-            end: '2025-11-24T13:30:00',
-            backgroundColor: '#00a65a', // green
-            borderColor: '#00a65a',
-            allDay: false
-          },
-          {
-            title: 'History (Class A)',
-            start: '2025-11-24T14:00:00',
-            end: '2025-11-24T15:30:00',
-            backgroundColor: '#00c0ef', // info
-            borderColor: '#00c0ef',
-            allDay: false
-          },
-          {
-            title: 'English (Class A)',
-            start: '2025-11-25T09:00:00',
-            end: '2025-11-25T10:30:00',
-            backgroundColor: '#3c8dbc', // primary
-            borderColor: '#3c8dbc',
-            allDay: false
-          },
-          {
-            title: 'Chemistry (Class A)',
-            start: '2025-11-25T11:00:00',
-            end: '2025-11-25T12:30:00',
-            backgroundColor: '#f39c12', // yellow
-            borderColor: '#f39c12',
-            allDay: false
-          },
-        ],
-        classB: [
-          {
-            title: 'Biology (Class B)',
-            start: '2025-11-24T09:00:00',
-            end: '2025-11-24T10:30:00',
-            backgroundColor: '#00a65a', // green
-            borderColor: '#00a65a',
-            allDay: false
-          },
-          {
-            title: 'Chemistry (Class B)',
-            start: '2025-11-24T11:00:00',
-            end: '2025-11-24T12:30:00',
-            backgroundColor: '#f39c12', // yellow
-            borderColor: '#f39c12',
-            allDay: false
-          },
-          {
-            title: 'Lunch Break',
-            start: '2025-11-24T12:30:00',
-            end: '2025-11-24T13:30:00',
-            backgroundColor: '#00a65a', // green
-            borderColor: '#00a65a',
-            allDay: false
-          },
-          {
-            title: 'Geography (Class B)',
-            start: '2025-11-24T14:00:00',
-            end: '2025-11-24T15:30:00',
-            backgroundColor: '#3c8dbc', // primary
-            borderColor: '#3c8dbc',
-            allDay: false
-          },
-        ],
-        classC: [
-          {
-            title: 'Art (Class C)',
-            start: '2025-11-24T09:00:00',
-            end: '2025-11-24T11:00:00',
-            backgroundColor: '#605ca8', // purple
-            borderColor: '#605ca8',
-            allDay: false
-          },
-          {
-            title: 'Lunch Break',
-            start: '2025-11-24T12:30:00',
-            end: '2025-11-24T13:30:00',
-            backgroundColor: '#00a65a', // green
-            borderColor: '#00a65a',
-            allDay: false
-          },
-          {
-            title: 'Music (Class C)',
-            start: '2025-11-24T13:30:00',
-            end: '2025-11-24T15:00:00',
-            backgroundColor: '#d81b60', // maroon
-            borderColor: '#d81b60',
-            allDay: false
-          },
-        ]
+      // Data Structure: Class -> Day -> Events
+      const classSchedules = {
+        classA: {
+          Monday: [
+            { subject: 'Mathematics', start: '09:00', end: '10:30', teacher: 'Mr. Smith', color: '#f56954' },
+            { subject: 'Physics', start: '11:00', end: '12:30', teacher: 'Dr. Brown', color: '#f39c12' },
+            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
+            { subject: 'History', start: '14:00', end: '15:30', teacher: 'Mrs. Davis', color: '#00c0ef' }
+          ],
+          Tuesday: [
+            { subject: 'English', start: '09:00', end: '10:30', teacher: 'Ms. Wilson', color: '#3c8dbc' },
+            { subject: 'Chemistry', start: '11:00', end: '12:30', teacher: 'Mr. White', color: '#f39c12' }
+          ],
+          Wednesday: [
+            { subject: 'Physical Ed', start: '08:00', end: '10:00', teacher: 'Coach Carter', color: '#605ca8' }
+          ],
+          Thursday: [
+            { subject: 'Biology', start: '09:00', end: '10:30', teacher: 'Dr. Green', color: '#00a65a' }
+          ],
+          Friday: [
+            { subject: 'Art', start: '10:00', end: '12:00', teacher: 'Ms. Palette', color: '#d81b60' }
+          ]
+        },
+        classB: {
+          Monday: [
+            { subject: 'Biology', start: '09:00', end: '10:30', teacher: 'Dr. Green', color: '#00a65a' },
+            { subject: 'Chemistry', start: '11:00', end: '12:30', teacher: 'Mr. White', color: '#f39c12' },
+            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
+            { subject: 'Geography', start: '14:00', end: '15:30', teacher: 'Mr. Globe', color: '#3c8dbc' }
+          ],
+          Tuesday: [], Wednesday: [], Thursday: [], Friday: []
+        },
+        classC: {
+          Monday: [
+            { subject: 'Art', start: '09:00', end: '11:00', teacher: 'Ms. Palette', color: '#605ca8' },
+            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
+            { subject: 'Music', start: '13:30', end: '15:00', teacher: 'Mr. Melody', color: '#d81b60' }
+          ],
+          Tuesday: [], Wednesday: [], Thursday: [], Friday: []
+        }
       };
 
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'timeGridWeek,timeGridDay'
-        },
-        initialView: 'timeGridWeek',
-        themeSystem: 'bootstrap',
-        slotMinTime: '08:00:00',
-        slotMaxTime: '18:00:00',
-        allDaySlot: false,
-        editable: false,
-        droppable: false,
-        events: classEvents.classA, // Default to Class A
-        selectable: false, // Read-only for teachers
-        selectMirror: false
-      });
+      const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-      calendar.render();
+      function renderSchedule(classId) {
+        const schedule = classSchedules[classId] || {};
+
+        let html = `
+          <table class="table table-bordered table-sm table-schedule">
+            <thead>
+              <tr>
+        `;
+
+        // Table Headers
+        daysOfWeek.forEach(day => {
+          html += `<th>${day}</th>`;
+        });
+
+        html += `
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+        `;
+
+        // Table Body (Single row with cells for each day)
+        daysOfWeek.forEach(day => {
+          const events = schedule[day] || [];
+          html += `<td>`;
+
+          if (events.length === 0) {
+            html += `<div class="text-muted text-center small mt-2">-</div>`;
+          } else {
+            events.forEach(event => {
+              html += `
+                <div class="schedule-item" style="border-left-color: ${event.color}">
+                  <div class="item-subject">${event.subject}</div>
+                  <div class="item-time">
+                    <i class="far fa-clock"></i> ${event.start} - ${event.end}
+                  </div>
+                  <div class="item-teacher">
+                    ${event.teacher}
+                  </div>
+                </div>
+              `;
+            });
+          }
+
+          html += `</td>`;
+        });
+
+        html += `
+              </tr>
+            </tbody>
+          </table>
+        `;
+
+        scheduleView.innerHTML = html;
+      }
+
+      // Initial Render
+      renderSchedule(classSelector.value);
 
       // Event listener for dropdown change
       classSelector.addEventListener('change', function () {
-        var selectedClass = this.value;
-        var newEvents = classEvents[selectedClass];
-
-        calendar.removeAllEvents();
-        calendar.addEventSource(newEvents);
+        renderSchedule(this.value);
       });
     });
   </script>
@@ -399,9 +410,7 @@
   <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../../dist/js/adminlte.js"></script>
-  <!-- fullCalendar 2.2.5 -->
-  <script src="../../plugins/moment/moment.min.js"></script>
-  <script src="../../plugins/fullcalendar/main.js"></script>
+
 </body>
 
 </html>
