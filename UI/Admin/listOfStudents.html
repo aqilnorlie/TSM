@@ -190,6 +190,11 @@
               <div class="card">
                 <div class="card-header">
                   <h3 class="card-title">Students Sinar Warisan</h3>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-success btn-sm" onclick="openAddModal()">
+                      <i class="fas fa-plus"></i> Add Student
+                    </button>
+                  </div>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
@@ -198,62 +203,22 @@
                       <tr>
                         <th>Name</th>
                         <th>Grade</th>
-                        <th>Subject</th>
+                        <th>Parent Name</th>
+                        <th>Contact</th>
+                        <th>Address</th>
                         <th>Detail</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <tr>
-                        <td>Trident</td>
-                        <td>Internet Explorer 4.0</td>
-                        <td>Win 95+</td>
-                        <td><button type="button" class="btn btn-primary" data-toggle="modal"
-                            data-target="#exampleModal">
-                            Launch demo modal
-                          </button></td>
-                      </tr>
-                      <tr>
-                        <td>Trident</td>
-                        <td>Internet Explorer 5.0</td>
-                        <td>Win 95+</td>
-                        <td>5</td>
-                      </tr>
-                      <tr>
-                        <td>Trident</td>
-                        <td>Internet Explorer 5.5</td>
-                        <td>Win 95+</td>
-                        <td>5.5</td>
-                      </tr>
-                      <tr>
-                        <td>Trident</td>
-                        <td>Internet Explorer 6</td>
-                        <td>Win 98+</td>
-                        <td>6</td>
-                      </tr>
-                      <tr>
-                        <td>Trident</td>
-                        <td>Internet Explorer 7</td>
-                        <td>Win XP SP2+</td>
-                        <td>7</td>
-                      </tr>
-                      <tr>
-                        <td>Trident</td>
-                        <td>AOL browser (AOL desktop)</td>
-                        <td>Win XP</td>
-                        <td>6</td>
-                      </tr>
-                      <tr>
-                        <td>Gecko</td>
-                        <td>Firefox 1.0</td>
-                        <td>Win 98+ / OSX.2+</td>
-                        <td>1.7</td>
-                      </tr>
+                    <tbody id="studentTableBody">
+                      <!-- Data will be populated by API -->
                     </tbody>
                     <tfoot>
                       <tr>
                         <th>Name</th>
                         <th>Grade</th>
-                        <th>Subject</th>
+                        <th>Parent Name</th>
+                        <th>Contact</th>
+                        <th>Address</th>
                         <th>Detail</th>
                       </tr>
                     </tfoot>
@@ -283,47 +248,49 @@
             </div>
 
             <div class="modal-body">
-              <form class="row">
+              <form class="row" id="studentForm">
+                <input type="hidden" id="studentId">
 
                 <!-- Name -->
                 <div class="form-group col-md-6">
                   <label for="studentName">Name</label>
-                  <input type="text" class="form-control" id="studentName">
+                  <input type="text" class="form-control" id="studentName" placeholder="Enter full name">
                 </div>
 
-                <!-- Grade + Parent Name -->
+                <!-- Grade -->
                 <div class="form-group col-md-6">
                   <label for="studentGrade">Grade</label>
-                  <input type="text" class="form-control" id="studentGrade">
+                  <input type="text" class="form-control" id="studentGrade" placeholder="Enter grade">
                 </div>
 
-
-                <div class="form-group col-md-12">
-                  <label>Select Multiple</label>
-                  <select multiple class="form-control">
-                    <option>option 1</option>
-                    <option>option 2</option>
-                    <option>option 3</option>
-                    <option>option 4</option>
-                    <option>option 5</option>
-                  </select>
-                </div>
-
+                <!-- Parent Name -->
                 <div class="form-group col-md-6">
                   <label for="parentName">Parent Name</label>
-                  <input type="text" class="form-control" id="parentName">
+                  <input type="text" class="form-control" id="parentName" placeholder="Enter parent name">
                 </div>
 
                 <!-- Parent Phone -->
                 <div class="form-group col-md-6">
                   <label for="parentPhone">Parent Phone Number</label>
-                  <input type="text" class="form-control" id="parentPhone">
+                  <input type="text" class="form-control" id="parentPhone" placeholder="Enter parent phone number">
                 </div>
 
                 <!-- Address full width -->
                 <div class="form-group col-md-12">
                   <label for="studentAddress">Address</label>
-                  <textarea class="form-control" id="studentAddress" rows="2"></textarea>
+                  <textarea class="form-control" id="studentAddress" rows="2"
+                    placeholder="Enter full address"></textarea>
+                </div>
+
+                <!-- Subjects Section -->
+                <div class="col-md-12">
+                  <label>Subjects & Teachers</label>
+                  <div id="subjectContainer">
+                    <!-- Dynamic rows will be added here -->
+                  </div>
+                  <button type="button" class="btn btn-info btn-sm mt-2" onclick="addSubjectRow()">
+                    <i class="fas fa-plus"></i> Add Subject
+                  </button>
                 </div>
 
               </form>
@@ -331,7 +298,8 @@
 
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
+              <button type="button" class="btn btn-primary" id="saveStudentBtn" onclick="saveStudent()">Save
+                changes</button>
             </div>
 
           </div>
@@ -395,7 +363,303 @@
         "autoWidth": false,
         "responsive": true,
       });
+
+      // Fetch students on load
+      fetchStudents();
+      fetchSubjectsForDropdown(); // Fetch subjects for the modal
     });
+
+    let isEditMode = false;
+    let studentsList = [];
+    let subjectsList = []; // To store fetched subjects
+
+    function fetchSubjectsForDropdown() {
+      fetch('http://localhost:8081/api/Subject/list', {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            subjectsList = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            subjectsList = data.data;
+          }
+        })
+        .catch(error => console.error('Error fetching subjects:', error));
+    }
+
+    function fetchTeachersForSubject(subject, rowId, selectedTeacherIdOrName = null) {
+      if (!subject) {
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) {
+          const teacherSelect = row.querySelector('.teacher-select');
+          teacherSelect.innerHTML = '<option value="">Select Teacher</option>';
+        }
+        return;
+      }
+
+      fetch(`http://localhost:8081/api/Subject/list/teacher/${subject}`, {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          let teachers = [];
+          if (Array.isArray(data)) {
+            teachers = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            teachers = data.data;
+          } else if (data.content && Array.isArray(data.content)) {
+            teachers = data.content;
+          }
+          console.log(teachers);
+          const row = document.getElementById(`row-${rowId}`);
+          if (row) {
+            const teacherSelect = row.querySelector('.teacher-select');
+            let options = '<option value="">Select Teacher</option>';
+            teachers.forEach(teacher => {
+              // Check against ID or Name for selection
+              const selected = (teacher.id == selectedTeacherIdOrName || teacher.name === selectedTeacherIdOrName) ? 'selected' : '';
+              options += `<option value="${teacher.id}" ${selected}>${teacher.name}</option>`;
+            });
+            teacherSelect.innerHTML = options;
+          }
+        })
+        .catch(error => console.error('Error fetching teachers for subject:', error));
+    }
+
+    function fetchStudents() {
+      fetch('http://localhost:8081/api/student/list', {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log("Students Data:", data);
+
+          // Handle wrapped responses
+          let students = [];
+          if (Array.isArray(data)) {
+            students = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            students = data.data;
+          } else if (data.content && Array.isArray(data.content)) {
+            students = data.content;
+          } else {
+            console.error("Unexpected API response structure:", data);
+            return;
+          }
+
+          studentsList = students;
+          const tableBody = document.getElementById('studentTableBody');
+          let html = '';
+
+          students.forEach(student => {
+            html += `
+              <tr>
+                <td>${student.name}</td>
+                <td>${student.grade || ''}</td>
+                <td>${student.parentName || ''}</td>
+                <td>${student.contact || ''}</td>
+                <td>${student.address || ''}</td>
+                <td>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openEditModal(this)" data-id="${student.id}">
+                    View Detail
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+
+          if ($.fn.DataTable.isDataTable('#example2')) {
+            $('#example2').DataTable().destroy();
+          }
+
+          tableBody.innerHTML = html;
+          $('#example2').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching students:', error);
+          alert('Failed to load student list.');
+        });
+    }
+
+    function openAddModal() {
+      isEditMode = false;
+      document.getElementById('studentForm').reset();
+      document.getElementById('studentId').value = '';
+      document.getElementById('exampleModalLabel').innerText = 'Add Student';
+      document.getElementById('subjectContainer').innerHTML = ''; // Clear subjects
+      addSubjectRow(); // Add one empty row by default
+      $('#exampleModal').modal('show');
+    }
+
+    function addSubjectRow(subject = '', teacherId = '') {
+      const container = document.getElementById('subjectContainer');
+      const rowId = Date.now(); // Unique ID for the row
+
+      let subjectOptions = '<option value="">Select Subject</option>';
+      subjectsList.forEach(sub => {
+        const selected = sub === subject ? 'selected' : '';
+        subjectOptions += `<option value="${sub}" ${selected}>${sub}</option>`;
+      });
+
+      const html = `
+        <div class="row mb-2 subject-row" id="row-${rowId}">
+          <div class="col-md-5">
+            <select class="form-control subject-select" onchange="fetchTeachersForSubject(this.value, '${rowId}')">
+              ${subjectOptions}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <select class="form-control teacher-select">
+              <option value="">Select Teacher</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeSubjectRow('${rowId}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+
+      // If subject is provided (Edit mode), fetch teachers immediately
+      if (subject) {
+        fetchTeachersForSubject(subject, rowId, teacherId);
+      }
+    }
+
+    function removeSubjectRow(rowId) {
+      const row = document.getElementById(`row-${rowId}`);
+      if (row) row.remove();
+    }
+
+    function openEditModal(btn) {
+      isEditMode = true;
+      document.getElementById('exampleModalLabel').innerText = 'Edit Student Detail';
+
+      const id = $(btn).data('id');
+      const student = studentsList.find(s => s.id == id);
+
+      if (student) {
+        document.getElementById('studentName').value = student.name;
+        document.getElementById('studentGrade').value = student.grade || '';
+        document.getElementById('parentName').value = student.parentName || '';
+        document.getElementById('parentPhone').value = student.contact || '';
+        document.getElementById('studentId').value = student.id;
+        document.getElementById('studentAddress').value = student.address || '';
+
+        // Populate subjects
+        const container = document.getElementById('subjectContainer');
+        container.innerHTML = '';
+        if (student.assignedTeacher && Array.isArray(student.assignedTeacher)) {
+          student.assignedTeacher.forEach(assign => {
+            // assign has { subjectName: 'maths', teacherName: 'malik' }
+            addSubjectRow(assign.subjectName, assign.teacherName);
+          });
+        } else if (student.subjects && Array.isArray(student.subjects)) {
+          // Fallback for older structure if needed
+          student.subjects.forEach(sub => {
+            addSubjectRow(sub.subjectName || sub.subject, sub.teacherId || sub.teacher?.id);
+          });
+        } else {
+          addSubjectRow(); // Add empty if none
+        }
+
+        $('#exampleModal').modal('show');
+      } else {
+        alert('Student details not found.');
+      }
+    }
+
+    function saveStudent() {
+      const id = document.getElementById('studentId').value;
+      const name = document.getElementById('studentName').value;
+      const grade = document.getElementById('studentGrade').value;
+      const parentName = document.getElementById('parentName').value;
+      const parentPhone = document.getElementById('parentPhone').value;
+      const address = document.getElementById('studentAddress').value;
+
+      const payload = {
+        name: name,
+        form_or_standard: grade,
+        parentName: parentName,
+        phone: parentPhone,
+        address: address,
+        teacher_ids: [] // Initialize teacherIds array
+      };
+
+      // Collect teacher data
+      const subjectRows = document.querySelectorAll('.subject-row');
+      subjectRows.forEach(row => {
+        const teacherId = row.querySelector('.teacher-select').value;
+        if (teacherId) {
+          payload.teacher_ids.push(teacherId);
+        }
+      });
+
+      let url = 'http://localhost:8081/api/student/add';
+      let method = 'POST';
+
+      if (isEditMode) {
+        url = `http://localhost:8081/api/student/update/${id}`;
+        method = 'PUT';
+      }
+
+      console.log(`Sending request to ${url} with method ${method}`, payload);
+
+      fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+        .then(response => {
+          if (response.ok) {
+            alert('Student saved successfully!');
+            $('#exampleModal').modal('hide');
+            fetchStudents();
+          } else {
+            alert('Failed to save student.');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while saving.');
+        });
+    }
+
+    function deleteStudent(id) {
+      if (confirm('Are you sure you want to delete this student?')) {
+        fetch(`http://localhost:8081/api/student/delete/${id}`, {
+          method: 'DELETE'
+        })
+          .then(response => {
+            if (response.ok) {
+              alert('Student deleted successfully!');
+              fetchStudents();
+            } else {
+              alert('Failed to delete student.');
+            }
+          })
+          .catch(error => {
+            console.error('Error deleting student:', error);
+            alert('An error occurred while deleting.');
+          });
+      }
+    }
   </script>
 </body>
 
