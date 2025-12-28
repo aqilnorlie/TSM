@@ -104,7 +104,7 @@
                         <div class="col-md-6">
                             <div class="card card-success">
                                 <div class="card-header">
-                                    <h3 class="card-title">Yearly Total Teacher</h3>
+                                    <h3 class="card-title">Total Teacher per Month</h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                             <i class="fas fa-minus"></i>
@@ -199,58 +199,11 @@
             var teacherChartCanvas = $('#teacherChart').get(0).getContext('2d')
             var paymentChartCanvas = $('#paymentChart').get(0).getContext('2d')
 
-            var studentData = {
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                datasets: [
-                    {
-                        label: 'Total Students',
-                        backgroundColor: 'rgba(60,141,188,0.9)',
-                        borderColor: 'rgba(60,141,188,0.8)',
-                        pointRadius: false,
-                        pointColor: '#3b8bba',
-                        pointStrokeColor: 'rgba(60,141,188,1)',
-                        pointHighlightFill: '#fff',
-                        pointHighlightStroke: 'rgba(60,141,188,1)',
-                        data: [28, 48, 40, 19, 86, 27, 90, 100, 120, 130, 140, 150]
-                    }
-                ]
-            }
+            // Student data will be fetched dynamically
 
-            var teacherData = {
-                labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
-                datasets: [
-                    {
-                        label: 'Total Teachers',
-                        backgroundColor: 'rgba(210, 214, 222, 1)',
-                        borderColor: 'rgba(210, 214, 222, 1)',
-                        pointRadius: false,
-                        pointColor: 'rgba(210, 214, 222, 1)',
-                        pointStrokeColor: '#c1c7d1',
-                        pointHighlightFill: '#fff',
-                        pointHighlightStroke: 'rgba(220,220,220,1)',
-                        data: [10, 12, 15, 18, 20, 25]
-                    }
-                ]
-            }
+            // Teacher data will be fetched dynamically
 
-            var paymentData = {
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                datasets: [
-                    {
-                        label: 'Total Payment ($)',
-                        backgroundColor: 'rgba(0, 192, 239, 0.5)',
-                        borderColor: 'rgba(0, 192, 239, 1)',
-                        pointRadius: 3,
-                        pointBackgroundColor: 'rgba(0, 192, 239, 1)',
-                        pointBorderColor: 'rgba(0, 192, 239, 1)',
-                        pointHoverRadius: 5,
-                        pointHoverBackgroundColor: 'rgba(0, 192, 239, 1)',
-                        pointHoverBorderColor: 'rgba(0, 192, 239, 1)',
-                        fill: true,
-                        data: [5000, 6000, 5500, 7000, 8000, 7500, 9000, 9500, 10000, 11000, 12000, 13000]
-                    }
-                ]
-            }
+            // Payment data will be fetched dynamically
 
             //-------------
             //- BAR CHART -
@@ -268,17 +221,103 @@
                 }
             }
 
-            new Chart(studentChartCanvas, {
-                type: 'bar',
-                data: studentData,
-                options: barChartOptions
-            })
+            // Fetch Student Data and Render Chart
+            fetch('http://localhost:8081/api/student/list')
+                .then(response => response.json())
+                .then(data => {
+                    let students = [];
+                    if (Array.isArray(data)) {
+                        students = data;
+                    } else if (data.data && Array.isArray(data.data)) {
+                        students = data.data;
+                    }
 
-            new Chart(teacherChartCanvas, {
-                type: 'bar',
-                data: teacherData,
-                options: barChartOptions
-            })
+                    // Initialize counts for 12 months
+                    let monthlyCounts = new Array(12).fill(0);
+
+                    students.forEach(student => {
+                        if (student.createdAt) {
+                            const date = new Date(student.createdAt);
+                            const month = date.getMonth(); // 0-11
+                            if (month >= 0 && month < 12) {
+                                monthlyCounts[month]++;
+                            }
+                        }
+                    });
+
+                    var studentData = {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        datasets: [
+                            {
+                                label: 'Total Students',
+                                backgroundColor: 'rgba(60,141,188,0.9)',
+                                borderColor: 'rgba(60,141,188,0.8)',
+                                pointRadius: false,
+                                pointColor: '#3b8bba',
+                                pointStrokeColor: 'rgba(60,141,188,1)',
+                                pointHighlightFill: '#fff',
+                                pointHighlightStroke: 'rgba(60,141,188,1)',
+                                data: monthlyCounts
+                            }
+                        ]
+                    }
+
+                    new Chart(studentChartCanvas, {
+                        type: 'bar',
+                        data: studentData,
+                        options: barChartOptions
+                    })
+                })
+                .catch(error => console.error('Error fetching student data:', error));
+
+            // Fetch Teacher Data and Render Chart
+            fetch('http://localhost:8081/api/teacher/list')
+                .then(response => response.json())
+                .then(data => {
+                    let teachers = [];
+                    if (Array.isArray(data)) {
+                        teachers = data;
+                    } else if (data.data && Array.isArray(data.data)) {
+                        teachers = data.data;
+                    }
+
+                    // Initialize counts for 12 months
+                    let monthlyCounts = new Array(12).fill(0);
+
+                    teachers.forEach(teacher => {
+                        if (teacher.createdAt) {
+                            const date = new Date(teacher.createdAt);
+                            const month = date.getMonth(); // 0-11
+                            if (month >= 0 && month < 12) {
+                                monthlyCounts[month]++;
+                            }
+                        }
+                    });
+
+                    var teacherData = {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        datasets: [
+                            {
+                                label: 'Total Teachers',
+                                backgroundColor: 'rgba(210, 214, 222, 1)',
+                                borderColor: 'rgba(210, 214, 222, 1)',
+                                pointRadius: false,
+                                pointColor: 'rgba(210, 214, 222, 1)',
+                                pointStrokeColor: '#c1c7d1',
+                                pointHighlightFill: '#fff',
+                                pointHighlightStroke: 'rgba(220,220,220,1)',
+                                data: monthlyCounts
+                            }
+                        ]
+                    }
+
+                    new Chart(teacherChartCanvas, {
+                        type: 'bar',
+                        data: teacherData,
+                        options: barChartOptions
+                    })
+                })
+                .catch(error => console.error('Error fetching teacher data:', error));
 
             //-------------
             //- LINE CHART -
@@ -296,11 +335,56 @@
                 }
             }
 
-            new Chart(paymentChartCanvas, {
-                type: 'line',
-                data: paymentData,
-                options: lineChartOptions
-            })
+            // Fetch Payment Data and Render Chart
+            fetch('http://localhost:8081/api/payment/list')
+                .then(response => response.json())
+                .then(data => {
+                    let payments = [];
+                    if (Array.isArray(data)) {
+                        payments = data;
+                    } else if (data.data && Array.isArray(data.data)) {
+                        payments = data.data;
+                    }
+
+                    // Initialize sums for 12 months
+                    let monthlySums = new Array(12).fill(0);
+
+                    payments.forEach(payment => {
+                        if (payment.date && payment.amount) {
+                            const date = new Date(payment.date);
+                            const month = date.getMonth(); // 0-11
+                            if (month >= 0 && month < 12) {
+                                monthlySums[month] += parseFloat(payment.amount);
+                            }
+                        }
+                    });
+
+                    var paymentData = {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        datasets: [
+                            {
+                                label: 'Total Payment ($)',
+                                backgroundColor: 'rgba(0, 192, 239, 0.5)',
+                                borderColor: 'rgba(0, 192, 239, 1)',
+                                pointRadius: 3,
+                                pointBackgroundColor: 'rgba(0, 192, 239, 1)',
+                                pointBorderColor: 'rgba(0, 192, 239, 1)',
+                                pointHoverRadius: 5,
+                                pointHoverBackgroundColor: 'rgba(0, 192, 239, 1)',
+                                pointHoverBorderColor: 'rgba(0, 192, 239, 1)',
+                                fill: true,
+                                data: monthlySums
+                            }
+                        ]
+                    }
+
+                    new Chart(paymentChartCanvas, {
+                        type: 'line',
+                        data: paymentData,
+                        options: lineChartOptions
+                    })
+                })
+                .catch(error => console.error('Error fetching payment data:', error));
 
         })
     </script>

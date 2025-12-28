@@ -374,7 +374,7 @@
     let subjectsList = []; // To store fetched subjects
 
     function fetchSubjectsForDropdown() {
-      fetch('http://localhost:8081/api/Subject/list', {
+      fetch('http://localhost:8081/api/subject/list', {
         method: 'GET'
       })
         .then(response => response.json())
@@ -398,7 +398,7 @@
         return;
       }
 
-      fetch(`http://localhost:8081/api/Subject/list/teacher/${subject}`, {
+      fetch(`http://localhost:8081/api/subject/list/teacher/${subject}`, {
         method: 'GET'
       })
         .then(response => response.json())
@@ -503,15 +503,21 @@
       $('#exampleModal').modal('show');
     }
 
-    function addSubjectRow(subject = '', teacherId = '') {
+    function addSubjectRow(subject = '', teacherId = '', studentId = null) {
       const container = document.getElementById('subjectContainer');
       const rowId = Date.now(); // Unique ID for the row
 
       let subjectOptions = '<option value="">Select Subject</option>';
       subjectsList.forEach(sub => {
-        const selected = sub === subject ? 'selected' : '';
-        subjectOptions += `<option value="${sub}" ${selected}>${sub}</option>`;
+        // Handle both string (legacy) and object {id, name}
+        const subName = (typeof sub === 'object' && sub.name) ? sub.name : sub;
+        const selected = subName === subject ? 'selected' : '';
+        subjectOptions += `<option value="${subName}" ${selected}>${subName}</option>`;
       });
+
+      const removeOnClick = (studentId && subject)
+        ? `removeSubjectRow('${rowId}', '${studentId}', '${subject}')`
+        : `removeSubjectRow('${rowId}')`;
 
       const html = `
         <div class="row mb-2 subject-row" id="row-${rowId}">
@@ -526,7 +532,7 @@
             </select>
           </div>
           <div class="col-md-2">
-            <button type="button" class="btn btn-danger btn-sm" onclick="removeSubjectRow('${rowId}')">
+            <button type="button" class="btn btn-danger btn-sm" onclick="${removeOnClick}">
               <i class="fas fa-trash"></i>
             </button>
           </div>
@@ -540,9 +546,42 @@
       }
     }
 
-    function removeSubjectRow(rowId) {
-      const row = document.getElementById(`row-${rowId}`);
-      if (row) row.remove();
+    function removeSubjectRow(rowId, studentId = null, subject = null) {
+      if (studentId && subject) {
+        const row = document.getElementById(`row-${rowId}`);
+        const teacherId = row.querySelector('.teacher-select').value;
+
+        if (!teacherId) {
+          alert('Teacher ID not found. Cannot remove assignment.');
+          return;
+        }
+
+        if (confirm(`Are you sure you want to remove the subject '${subject}'?`)) {
+          fetch(`http://localhost:8081/api/teach/remove/${teacherId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ studentId: studentId })
+          })
+            .then(response => {
+              if (response.ok) {
+                alert('Subject removed successfully.');
+                $('#exampleModal').modal('hide');
+                fetchStudents();
+              } else {
+                alert('Failed to remove subject.');
+              }
+            })
+            .catch(error => {
+              console.error('Error removing subject:', error);
+              alert('An error occurred while removing the subject.');
+            });
+        }
+      } else {
+        const row = document.getElementById(`row-${rowId}`);
+        if (row) row.remove();
+      }
     }
 
     function openEditModal(btn) {
@@ -566,12 +605,12 @@
         if (student.assignedTeacher && Array.isArray(student.assignedTeacher)) {
           student.assignedTeacher.forEach(assign => {
             // assign has { subjectName: 'maths', teacherName: 'malik' }
-            addSubjectRow(assign.subjectName, assign.teacherName);
+            addSubjectRow(assign.subjectName, assign.teacherName, student.id);
           });
         } else if (student.subjects && Array.isArray(student.subjects)) {
           // Fallback for older structure if needed
           student.subjects.forEach(sub => {
-            addSubjectRow(sub.subjectName || sub.subject, sub.teacherId || sub.teacher?.id);
+            addSubjectRow(sub.subjectName || sub.subject, sub.teacherId || sub.teacher?.id, student.id);
           });
         } else {
           addSubjectRow(); // Add empty if none

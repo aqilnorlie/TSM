@@ -181,19 +181,7 @@
           <!-- Small boxes (Stat box) -->
           <!-- Row removed as requested -->
           <!-- /.row -->
-          <!-- Class Selection Dropdown -->
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label for="class-selector">Select Class Schedule:</label>
-                <select class="form-control" id="class-selector">
-                  <option value="classA">Class A</option>
-                  <option value="classB">Class B</option>
-                  <option value="classC">Class C</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <!-- Class Selection Dropdown Removed -->
 
           <!-- Main row -->
           <div class="row mt-2">
@@ -239,15 +227,13 @@
               <div class="form-group">
                 <label for="event-subject">Subject</label>
                 <select class="form-control" id="event-subject">
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Biology">Biology</option>
-                  <option value="History">History</option>
-                  <option value="English">English</option>
-                  <option value="Geography">Geography</option>
-                  <option value="Art">Art</option>
-                  <option value="Music">Music</option>
+                  <option value="">Select Subject</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="event-teacher">Teacher</label>
+                <select class="form-control" id="event-teacher">
+                  <option value="">Select Teacher</option>
                 </select>
               </div>
               <div class="form-group">
@@ -261,9 +247,12 @@
               </div>
               <input type="hidden" id="event-day">
               <input type="hidden" id="event-index">
+              <input type="hidden" id="event-id">
             </form>
           </div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-danger mr-auto" id="delete-event-btn"
+              style="display: none;">Delete</button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" id="save-event-btn">Save changes</button>
           </div>
@@ -281,27 +270,145 @@
       });
 
       const scheduleView = document.getElementById('schedule-view');
-      const classSelector = document.getElementById('class-selector');
+      // const classSelector = document.getElementById('class-selector'); // Removed
       const eventModal = $('#event-modal');
+      const eventSubjectSelect = document.getElementById('event-subject');
+      const eventTeacherSelect = document.getElementById('event-teacher');
       const saveBtn = document.getElementById('save-event-btn');
 
       // Data Structure: Class -> Day -> Events
       // Initial dummy data
-      const classSchedules = {
-        classA: {
-          Monday: [
-            { subject: 'Mathematics', start: '09:00', end: '10:30', teacher: 'Mr. Smith', color: '#f56954' }
-          ],
-          Tuesday: [], Wednesday: [], Thursday: [], Friday: []
-        },
-        classB: { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] },
-        classC: { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] }
+      // Data Structure: Day -> Events (Single Schedule)
+      // Initial dummy data
+      // Data Structure: Day -> Events (Single Schedule)
+      // Initial empty data, will be populated by API
+      let weeklySchedule = {
+        Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: []
       };
 
       const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-      function renderSchedule(classId) {
-        const schedule = classSchedules[classId] || {};
+      function fetchSubjects() {
+        fetch('http://localhost:8081/api/subject/list')
+          .then(response => response.json())
+          .then(data => {
+            let subjects = [];
+            if (Array.isArray(data)) {
+              subjects = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              subjects = data.data;
+            }
+
+            let options = '<option value="">Select Subject</option>';
+            subjects.forEach(subject => {
+              // Handle both string and object {id, name}
+              const subName = (typeof subject === 'object' && subject.name) ? subject.name : subject;
+              const subId = (typeof subject === 'object' && subject.id) ? subject.id : subject;
+              // Store name in data attribute for teacher fetch
+              options += `<option value="${subId}" data-name="${subName}">${subName}</option>`;
+            });
+            eventSubjectSelect.innerHTML = options;
+          })
+          .catch(error => console.error('Error fetching subjects:', error));
+      }
+
+      function fetchTeachersForSchedule(subjectName, selectedTeacherId = null) {
+        // Clear immediately to avoid stale data and show loading
+        eventTeacherSelect.innerHTML = '<option value="">Loading...</option>';
+
+        if (!subjectName) {
+          eventTeacherSelect.innerHTML = '<option value="">Select Teacher</option>';
+          return;
+        }
+
+        const url = `http://localhost:8081/api/subject/list/teacher/${subjectName}`;
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            let teachers = [];
+            if (Array.isArray(data)) {
+              teachers = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              teachers = data.data;
+            }
+
+            let options = '<option value="">Select Teacher</option>';
+            teachers.forEach(teacher => {
+              const teacherName = (typeof teacher === 'object' && teacher.name) ? teacher.name : teacher;
+              const teacherId = (typeof teacher === 'object' && teacher.id) ? teacher.id : teacher;
+              const selected = (selectedTeacherId && String(teacherId) === String(selectedTeacherId)) ? 'selected' : '';
+              options += `<option value="${teacherId}" data-name="${teacherName}" ${selected}>${teacherName}</option>`;
+            });
+            eventTeacherSelect.innerHTML = options;
+          })
+          .catch(error => {
+            console.error('Error fetching teachers:', error);
+            eventTeacherSelect.innerHTML = '<option value="">Select Teacher</option>';
+          });
+      }
+
+      function fetchSchedule() {
+        fetch('http://localhost:8081/api/schedule/all')
+          .then(response => response.json())
+          .then(data => {
+            // Reset schedule
+            weeklySchedule = {
+              Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: []
+            };
+
+            let scheduleData = [];
+            if (Array.isArray(data)) {
+              scheduleData = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              scheduleData = data.data;
+            }
+
+            const colorMap = {
+              'Mathematics': '#f56954',
+              'Physics': '#f39c12',
+              'Chemistry': '#f39c12',
+              'Biology': '#00a65a',
+              'History': '#00c0ef',
+              'English': '#3c8dbc',
+              'Geography': '#3c8dbc',
+              'Art': '#605ca8',
+              'Music': '#d81b60'
+            };
+
+            scheduleData.forEach(item => {
+              // Filter out entries with null day, start time, or end time
+              if (item.day && item.startTime && item.endTime) {
+                // Ensure day exists in weeklySchedule (handle case sensitivity if needed)
+                // Assuming API returns proper capitalized day names like "Monday"
+                if (!weeklySchedule[item.day]) {
+                  weeklySchedule[item.day] = [];
+                }
+
+                weeklySchedule[item.day].push({
+                  id: item.id || item.scheduleId, // Capture ID if available
+                  subject: item.subjectName,
+                  subjectId: item.subjectId,
+                  start: item.startTime,
+                  end: item.endTime,
+                  teacher: item.teacherName,
+                  teacherId: item.teacherId,
+                  color: colorMap[item.subjectName] || '#3c8dbc'
+                });
+              }
+            });
+
+            // Sort events by start time for each day
+            for (const day in weeklySchedule) {
+              weeklySchedule[day].sort((a, b) => a.start.localeCompare(b.start));
+            }
+
+            renderSchedule();
+          })
+          .catch(error => console.error('Error fetching schedule:', error));
+      }
+
+      function renderSchedule() {
+        const schedule = weeklySchedule;
 
         let html = `
           <table class="table table-bordered table-sm table-schedule">
@@ -359,40 +466,75 @@
       window.openAddModal = function (day) {
         document.getElementById('event-day').value = day;
         document.getElementById('event-index').value = ''; // Clear index for new event
+        document.getElementById('event-id').value = ''; // Clear ID
         document.getElementById('eventModalLabel').innerText = `Add Class - ${day}`;
 
         // Reset form
         document.getElementById('event-form').reset();
 
+        // Hide delete button for new events
+        document.getElementById('delete-event-btn').style.display = 'none';
+
         eventModal.modal('show');
       };
 
       window.openEditModal = function (day, index) {
-        const currentClass = classSelector.value;
-        const event = classSchedules[currentClass][day][index];
+        const localEvent = weeklySchedule[day][index];
+        console.log('Clicked Event Data:', localEvent); // Debug log
+        const scheduleId = localEvent.id; // Use scheduleId
 
-        document.getElementById('event-day').value = day;
-        document.getElementById('event-index').value = index; // Set index for editing
-        document.getElementById('eventModalLabel').innerText = `Edit Class - ${day}`;
+        if (!scheduleId) {
+          console.error("No schedule ID found for event");
+          return;
+        }
 
-        // Pre-fill form
-        document.getElementById('event-subject').value = event.subject;
-        document.getElementById('event-start-time').value = event.start;
-        document.getElementById('event-end-time').value = event.end;
+        // Fetch details from API
+        fetch(`http://localhost:8081/api/schedule/get/${scheduleId}`)
+          .then(response => response.json())
+          .then(data => {
+            const event = data.data || data; // Handle potential response structure
 
-        eventModal.modal('show');
+            document.getElementById('event-day').value = day;
+            document.getElementById('event-index').value = index; // Keep index for reference
+            document.getElementById('event-id').value = event.id || event.scheduleId || localEvent.id || ''; // Set ID from API or local
+            document.getElementById('eventModalLabel').innerText = `Edit Class - ${day}`;
+
+            // Pre-fill form with fetched data
+            document.getElementById('event-subject').value = event.subjectId || '';
+
+            // Trigger change to fetch teachers, then select teacher
+            const subjectOption = eventSubjectSelect.options[eventSubjectSelect.selectedIndex];
+            const subjectName = subjectOption ? subjectOption.getAttribute('data-name') : '';
+
+            // Always fetch (or clear) teachers
+            // Use fetched teacherId, fallback to local if missing in response
+            fetchTeachersForSchedule(subjectName, event.teacherId || teacherId);
+
+            document.getElementById('event-start-time').value = event.startTime || event.start || '';
+            document.getElementById('event-end-time').value = event.endTime || event.end || '';
+
+            // Show delete button for existing events
+            document.getElementById('delete-event-btn').style.display = 'block';
+
+            eventModal.modal('show');
+          })
+          .catch(error => {
+            console.error('Error fetching schedule details:', error);
+            alert('Failed to load schedule details.');
+          });
       };
 
       // Save Handler
       saveBtn.addEventListener('click', function () {
-        const currentClass = classSelector.value;
         const day = document.getElementById('event-day').value;
         const index = document.getElementById('event-index').value; // Get index
         const subject = document.getElementById('event-subject').value;
+        const teacher = document.getElementById('event-teacher').value;
         const startTime = document.getElementById('event-start-time').value;
         const endTime = document.getElementById('event-end-time').value;
+        console.log(subject, teacher, startTime, endTime);
 
-        if (startTime && endTime) {
+        if (subject && teacher && startTime && endTime) {
           // Basic validation
           if (startTime >= endTime) {
             alert("End time must be after start time");
@@ -411,44 +553,102 @@
             'Music': '#d81b60'
           };
 
+          // Get teacher name for display
+          const selectedTeacherOption = eventTeacherSelect.options[eventTeacherSelect.selectedIndex];
+          const teacherName = selectedTeacherOption ? selectedTeacherOption.getAttribute('data-name') : teacher;
+
           const newEvent = {
-            subject: subject,
+            subjectId: subject,
             start: startTime,
             end: endTime,
-            teacher: 'Assigned Teacher', // Placeholder, could add input for this
+            teacher: teacherName, // Use name for display
+            teacherId: teacher, // Store ID if needed
             color: colorMap[subject] || '#3c8dbc'
           };
 
-          // Initialize array if undefined
-          if (!classSchedules[currentClass][day]) {
-            classSchedules[currentClass][day] = [];
+
+          // API Call to save/update subject schedule
+          const payload = {
+            subjectId: subject, // subject ID from dropdown
+            teacherId: teacher, // teacher ID from dropdown
+            timeStart: startTime,
+            timeEnd: endTime,
+            day: day
+          };
+
+          const eventId = document.getElementById('event-id').value;
+          let url = 'http://localhost:8081/api/schedule/add';
+          let method = 'POST';
+
+          if (eventId) {
+            url = `http://localhost:8081/api/schedule/update/${eventId}`;
+            method = 'PUT';
+            // payload.id = eventId; // ID is in URL now, usually not needed in body for RESTful PUT, but keeping if backend needs it
           }
 
-          if (index !== '') {
-            // Update existing event
-            classSchedules[currentClass][day][index] = newEvent;
-          } else {
-            // Add new event
-            classSchedules[currentClass][day].push(newEvent);
-          }
-
-          // Sort events by start time
-          classSchedules[currentClass][day].sort((a, b) => a.start.localeCompare(b.start));
-
-          renderSchedule(currentClass);
-          eventModal.modal('hide');
+          console.log(payload);
+          fetch(url, {
+            method: method,
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+            .then(response => {
+              if (response.ok) {
+                console.log('Event saved successfully:', newEvent);
+                // Refresh schedule from API
+                fetchSchedule();
+                eventModal.modal('hide');
+                alert('Schedule updated successfully!');
+              } else {
+                console.log(payload)
+                alert('Failed to update schedule. Please try again.');
+              }
+            })
+            .catch(error => {
+              console.error('Error updating schedule:', error);
+              alert('An error occurred while updating the schedule.');
+            });
 
         } else {
-          alert('Please enter valid start and end times.');
+          alert('Please fill in all fields (Subject, Teacher, Start Time, End Time).');
+        }
+      });
+
+      // Delete Handler
+      document.getElementById('delete-event-btn').addEventListener('click', function () {
+        const eventId = document.getElementById('event-id').value;
+        if (eventId && confirm('Are you sure you want to delete this class?')) {
+          fetch(`http://localhost:8081/api/schedule/delete/${eventId}`, {
+            method: 'DELETE'
+          })
+            .then(response => {
+              if (response.ok) {
+                console.log('Event deleted successfully:', eventId);
+                fetchSchedule();
+                eventModal.modal('hide');
+                alert('Schedule deleted successfully!');
+              } else {
+                alert('Failed to delete schedule. Please try again.');
+              }
+            })
+            .catch(error => {
+              console.error('Error deleting schedule:', error);
+              alert('An error occurred while deleting the schedule.');
+            });
         }
       });
 
       // Initial Render
-      renderSchedule(classSelector.value);
+      fetchSchedule(); // Fetch schedule from API
+      fetchSubjects(); // Fetch subjects for the modal
 
-      // Event listener for dropdown change
-      classSelector.addEventListener('change', function () {
-        renderSchedule(this.value);
+      // Event listener for subject change
+      eventSubjectSelect.addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const subjectName = selectedOption.getAttribute('data-name');
+        fetchTeachersForSchedule(subjectName);
       });
     });
   </script>
