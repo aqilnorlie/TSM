@@ -23,39 +23,46 @@
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <!-- Daterange picker -->
   <link rel="stylesheet" href="../../plugins/daterangepicker/daterangepicker.css">
-  <!-- fullCalendar -->
-  <link rel="stylesheet" href="../../plugins/fullcalendar/main.css">
 
 
 
-  <style>
-    /* Modern Professional Calendar Styling */
-
-    /* Header background */
-    .fc .fc-toolbar {
-      background-color: #f8f9fa;
-      /* light neutral grey */
-      padding: 10px;
-      border-radius: 15px;
-      border: 1px solid #b1b5b9;
-    }
-
-    /* Header title */
-    .fc .fc-toolbar-title {
-      color: #314457 !important;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
 
 
-    /* Today highlight */
-    .fc .fc-daygrid-day.fc-day-today {
-      background-color: #abbdda !important;
-    }
-  </style>
 </head>
 
 <body class="hold-transition dark-mode sidebar-mini layout-fixed">
+  <script>
+    (function () {
+      // Check for login
+      const user = localStorage.getItem('user');
+      if (!user) {
+        window.location.href = '../login.html';
+      }
+
+      // Intercept fetch to handle 401 and specific error messages
+      const originalFetch = window.fetch;
+      window.fetch = function () {
+        return originalFetch.apply(this, arguments).then(async response => {
+          if (response.status === 401) {
+            window.location.href = '../login.html';
+            return response;
+          }
+
+          // Check for specific JSON error message
+          const clone = response.clone();
+          try {
+            const data = await clone.json();
+            if (data.error === "UNAUTHORIZED" || data.message === "Please login first") {
+              window.location.href = '../login.html';
+            }
+          } catch (e) {
+            // Ignore if not JSON
+          }
+          return response;
+        });
+      };
+    })();
+  </script>
   <div class="wrapper">
 
     <!-- Preloader -->
@@ -64,48 +71,7 @@
     </div>
 
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-dark">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
-        <!-- <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li> -->
-        <li class="nav-item d-none d-sm-inline-block">
-          <a href="../../index3.html" class="nav-link">Home</a>
-        </li>
-      </ul>
-
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="far fa-bell"></i>
-            <span class="badge badge-warning navbar-badge">15</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-            <span class="dropdown-item dropdown-header">15 Notifications</span>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-envelope mr-2"></i> 4 new messages
-              <span class="float-right text-muted text-sm">3 mins</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-users mr-2"></i> 8 friend requests
-              <span class="float-right text-muted text-sm">12 hours</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-file mr-2"></i> 3 new reports
-              <span class="float-right text-muted text-sm">2 days</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-          </div>
-        </li>
-      </ul>
-    </nav>
+    <div id="navbar-container"></div>
     <!-- /.navbar -->
 
     <!-- Main Sidebar Container -->
@@ -139,31 +105,31 @@
           <div class="row">
             <div class="col-lg-3 col-6">
               <!-- small box -->
-              <div class="small-box bg-info">
+              <div class="small-box bg-success">
                 <div class="inner">
-                  <h3>150</h3>
+                  <h3 id="total-teachers">0</h3>
 
-                  <p>New Orders</p>
+                  <p>Total Teachers</p>
                 </div>
                 <div class="icon">
-                  <i class="ion ion-bag"></i>
+                  <i class="fas fa-chalkboard-teacher"></i>
                 </div>
-                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+
               </div>
             </div>
             <!-- ./col -->
             <div class="col-lg-3 col-6">
               <!-- small box -->
-              <div class="small-box bg-success">
+              <div class="small-box bg-info">
                 <div class="inner">
-                  <h3>53<sup style="font-size: 20px">%</sup></h3>
+                  <h3 id="total-students">0</h3>
 
-                  <p>Bounce Rate</p>
+                  <p>Total Students</p>
                 </div>
                 <div class="icon">
-                  <i class="ion ion-stats-bars"></i>
+                  <i class="fas fa-user-graduate"></i>
                 </div>
-                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+
               </div>
             </div>
             <!-- ./col -->
@@ -171,14 +137,14 @@
               <!-- small box -->
               <div class="small-box bg-warning">
                 <div class="inner">
-                  <h3>44</h3>
+                  <h3 id="total-subjects">0</h3>
 
-                  <p>User Registrations</p>
+                  <p>Total Subjects</p>
                 </div>
                 <div class="icon">
-                  <i class="ion ion-person-add"></i>
+                  <i class="fas fa-book"></i>
                 </div>
-                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+
               </div>
             </div>
             <!-- ./col -->
@@ -186,33 +152,101 @@
               <!-- small box -->
               <div class="small-box bg-danger">
                 <div class="inner">
-                  <h3>65</h3>
+                  <h3 id="total-income">0</h3>
 
-                  <p>Unique Visitors</p>
+                  <p>Total Income</p>
                 </div>
                 <div class="icon">
-                  <i class="ion ion-pie-graph"></i>
+                  <i class="fas fa-dollar-sign"></i>
                 </div>
-                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+
               </div>
             </div>
             <!-- ./col -->
           </div>
           <!-- /.row -->
           <!-- Main row -->
-          <div class="row mt-2">
-            <div class="col-12">
-              <div id="calendar"></div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card card-primary">
+                <div class="card-header">
+                  <h3 class="card-title">Total Student per Month</h3>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="chart">
+                    <canvas id="studentChart"
+                      style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                  </div>
+                </div>
+              </div>
             </div>
+            <!-- /.col (LEFT) -->
+
+            <!-- Total Teacher Chart -->
+            <div class="col-md-6">
+              <div class="card card-success">
+                <div class="card-header">
+                  <h3 class="card-title">Total Teacher per Month</h3>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="chart">
+                    <canvas id="teacherChart"
+                      style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /.col (RIGHT) -->
           </div>
-          <!-- /.row (main row) -->
-        </div><!-- /.container-fluid -->
+          <!-- /.row -->
+
+          <div class="row">
+            <!-- Total Payment per Month Chart -->
+            <div class="col-md-12">
+              <div class="card card-info">
+                <div class="card-header">
+                  <h3 class="card-title">Total Payment per Month</h3>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="chart">
+                    <canvas id="paymentChart"
+                      style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /.row (main row) -->
+          </div><!-- /.container-fluid -->
       </section>
       <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
     <footer class="main-footer">
-      <strong>Copyright &copy; 2025-2030 <a href="https://adminlte.io">AdminLTE.io</a>.</strong>
+      <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
       All rights reserved.
       <div class="float-right d-none d-sm-inline-block">
         <b>Version</b> 3.2.0
@@ -229,20 +263,274 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      var calendarEl = document.getElementById('calendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        themeSystem: 'bootstrap',
-        editable: false,
-        droppable: false,
-        events: [] // empty event list for now
-      });
+      /* ChartJS
+       * -------
+       * Here we will create a few charts using ChartJS
+       */
 
-      calendar.render();
+      // Get context with jQuery - using jQuery's .get() method.
+      var studentChartCanvas = $('#studentChart').get(0).getContext('2d')
+      var teacherChartCanvas = $('#teacherChart').get(0).getContext('2d')
+      var paymentChartCanvas = $('#paymentChart').get(0).getContext('2d')
+
+      //-------------
+      //- BAR CHART -
+      //-------------
+      var barChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        datasetFill: false,
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+
+      // Fetch Student Data and Render Chart
+      fetch('http://localhost:8081/api/student/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let students = [];
+          if (Array.isArray(data)) {
+            students = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            students = data.data;
+          }
+
+          // Initialize counts for 12 months
+          let monthlyCounts = new Array(12).fill(0);
+
+          students.forEach(student => {
+            if (student.createdAt) {
+              const date = new Date(student.createdAt);
+              const month = date.getMonth(); // 0-11
+              if (month >= 0 && month < 12) {
+                monthlyCounts[month]++;
+              }
+            }
+          });
+
+          var studentData = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            datasets: [
+              {
+                label: 'Total Students',
+                backgroundColor: 'rgba(60,141,188,0.9)',
+                borderColor: 'rgba(60,141,188,0.8)',
+                pointRadius: false,
+                pointColor: '#3b8bba',
+                pointStrokeColor: 'rgba(60,141,188,1)',
+                pointHighlightFill: '#fff',
+                pointHighlightStroke: 'rgba(60,141,188,1)',
+                data: monthlyCounts
+              }
+            ]
+          }
+
+          new Chart(studentChartCanvas, {
+            type: 'bar',
+            data: studentData,
+            options: barChartOptions
+          })
+        })
+        .catch(error => console.error('Error fetching student data:', error));
+
+      // Fetch Teacher Data and Render Chart
+      fetch('http://localhost:8081/api/teacher/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let teachers = [];
+          if (Array.isArray(data)) {
+            teachers = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            teachers = data.data;
+          }
+
+          // Initialize counts for 12 months
+          let monthlyCounts = new Array(12).fill(0);
+
+          teachers.forEach(teacher => {
+            if (teacher.createdAt) {
+              const date = new Date(teacher.createdAt);
+              const month = date.getMonth(); // 0-11
+              if (month >= 0 && month < 12) {
+                monthlyCounts[month]++;
+              }
+            }
+          });
+
+          var teacherData = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            datasets: [
+              {
+                label: 'Total Teachers',
+                backgroundColor: 'rgba(210, 214, 222, 1)',
+                borderColor: 'rgba(210, 214, 222, 1)',
+                pointRadius: false,
+                pointColor: 'rgba(210, 214, 222, 1)',
+                pointStrokeColor: '#c1c7d1',
+                pointHighlightFill: '#fff',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data: monthlyCounts
+              }
+            ]
+          }
+
+          new Chart(teacherChartCanvas, {
+            type: 'bar',
+            data: teacherData,
+            options: barChartOptions
+          })
+        })
+        .catch(error => console.error('Error fetching teacher data:', error));
+
+      //-------------
+      //- LINE CHART -
+      //-------------
+      var lineChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        datasetFill: false,
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+
+      // Fetch Payment Data and Render Chart
+      fetch('http://localhost:8081/api/payment/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let payments = [];
+          if (Array.isArray(data)) {
+            payments = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            payments = data.data;
+          }
+
+          // Initialize sums for 12 months
+          let monthlySums = new Array(12).fill(0);
+
+          payments.forEach(payment => {
+            if (payment.date && payment.amount) {
+              const date = new Date(payment.date);
+              const month = date.getMonth(); // 0-11
+              if (month >= 0 && month < 12) {
+                monthlySums[month] += parseFloat(payment.amount);
+              }
+            }
+          });
+
+          var paymentData = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            datasets: [
+              {
+                label: 'Total Payment ($)',
+                backgroundColor: 'rgba(0, 192, 239, 0.5)',
+                borderColor: 'rgba(0, 192, 239, 1)',
+                pointRadius: 3,
+                pointBackgroundColor: 'rgba(0, 192, 239, 1)',
+                pointBorderColor: 'rgba(0, 192, 239, 1)',
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: 'rgba(0, 192, 239, 1)',
+                pointHoverBorderColor: 'rgba(0, 192, 239, 1)',
+                fill: true,
+                data: monthlySums
+              }
+            ]
+          }
+
+          new Chart(paymentChartCanvas, {
+            type: 'line',
+            data: paymentData,
+            options: lineChartOptions
+          })
+        })
+        .catch(error => console.error('Error fetching payment data:', error));
+
+      //----------------
+      //- STAT BOXES -
+      //----------------
+
+      // Fetch Total Teachers
+      fetch('http://localhost:8081/api/teacher/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let count = 0;
+          if (Array.isArray(data)) {
+            count = data.length;
+          } else if (data.data && Array.isArray(data.data)) {
+            count = data.data.length;
+          }
+          document.getElementById('total-teachers').innerText = count;
+        })
+        .catch(error => console.error('Error fetching teacher count:', error));
+
+      // Fetch Total Students
+      fetch('http://localhost:8081/api/student/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let count = 0;
+          if (Array.isArray(data)) {
+            count = data.length;
+          } else if (data.data && Array.isArray(data.data)) {
+            count = data.data.length;
+          }
+          document.getElementById('total-students').innerText = count;
+        })
+        .catch(error => console.error('Error fetching student count:', error));
+
+      // Fetch Total Subjects
+      fetch('http://localhost:8081/api/subject/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let count = 0;
+          if (Array.isArray(data)) {
+            count = data.length;
+          } else if (data.data && Array.isArray(data.data)) {
+            count = data.data.length;
+          }
+          document.getElementById('total-subjects').innerText = count;
+        })
+        .catch(error => console.error('Error fetching subject count:', error));
+
+      // Fetch Total Income (reuse payment data logic if possible, or fetch again)
+      // Since we already fetch payments for the chart, we could technically optimize, 
+      // but for simplicity and separation of concerns, we'll fetch or just calculate here.
+      // Actually, let's just fetch again to be clean, or we can move the logic.
+      // Let's fetch again to ensure this block is standalone.
+      fetch('http://localhost:8081/api/payment/list', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+          let payments = [];
+          if (Array.isArray(data)) {
+            payments = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            payments = data.data;
+          }
+
+          let totalIncome = 0;
+          payments.forEach(payment => {
+            if (payment.amount) {
+              totalIncome += parseFloat(payment.amount);
+            }
+          });
+
+          // Format currency
+          const formattedIncome = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(totalIncome);
+
+          document.getElementById('total-income').innerText = formattedIncome;
+        })
+        .catch(error => console.error('Error fetching income:', error));
     });
   </script>
 
@@ -255,7 +543,8 @@
     $.widget.bridge('uibutton', $.ui.button)
   </script>
   <!-- Bootstrap 4 -->
-  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- ChartJS -->
+  <script src="../../plugins/chart.js/Chart.min.js"></script>
   <!-- daterangepicker -->
   <script src="../../plugins/moment/moment.min.js"></script>
   <script src="../../plugins/daterangepicker/daterangepicker.js"></script>
@@ -267,13 +556,15 @@
   <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../../dist/js/adminlte.js"></script>
-  <script src="../../plugins/fullcalendar/main.js"></script>
+
   <script>
     $(function () {
       // Load Sidebar
       $("#sidebar-container").load("sidebar.html", function () {
         $("#nav-dashboard").addClass("active");
       });
+      // Load Navbar
+      $("#navbar-container").load("navbar.html");
     });
   </script>
 </body>

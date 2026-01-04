@@ -98,6 +98,38 @@
 </head>
 
 <body class="hold-transition dark-mode sidebar-mini layout-fixed">
+  <script>
+    (function () {
+      // Check for login
+      const user = localStorage.getItem('user');
+      if (!user) {
+        window.location.href = '../login.html';
+      }
+
+      // Intercept fetch to handle 401 and specific error messages
+      const originalFetch = window.fetch;
+      window.fetch = function () {
+        return originalFetch.apply(this, arguments).then(async response => {
+          if (response.status === 401) {
+            window.location.href = '../login.html';
+            return response;
+          }
+
+          // Check for specific JSON error message
+          const clone = response.clone();
+          try {
+            const data = await clone.json();
+            if (data.error === "UNAUTHORIZED" || data.message === "Please login first") {
+              window.location.href = '../login.html';
+            }
+          } catch (e) {
+            // Ignore if not JSON
+          }
+          return response;
+        });
+      };
+    })();
+  </script>
   <div class="wrapper">
 
     <!-- Preloader -->
@@ -113,38 +145,7 @@
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="../../index3.html" class="nav-link">Home</a>
-        </li>
-      </ul>
-
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="far fa-bell"></i>
-            <span class="badge badge-warning navbar-badge">15</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-            <span class="dropdown-item dropdown-header">15 Notifications</span>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-envelope mr-2"></i> 4 new messages
-              <span class="float-right text-muted text-sm">3 mins</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-users mr-2"></i> 8 friend requests
-              <span class="float-right text-muted text-sm">12 hours</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-file mr-2"></i> 3 new reports
-              <span class="float-right text-muted text-sm">2 days</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-          </div>
+          <a href="index.html" class="nav-link">Home</a>
         </li>
       </ul>
     </nav>
@@ -181,18 +182,7 @@
           <!-- Row removed as requested -->
           <!-- /.row -->
           <!-- Class Selection Dropdown -->
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label for="class-selector">Select Class Schedule:</label>
-                <select class="form-control" id="class-selector">
-                  <option value="classA">Class A</option>
-                  <option value="classB">Class B</option>
-                  <option value="classC">Class C</option>
-                </select>
-              </div>
-            </div>
-          </div>
+
 
           <!-- Main row -->
           <div class="row mt-2">
@@ -209,7 +199,7 @@
     </div>
     <!-- /.content-wrapper -->
     <footer class="main-footer">
-      <strong>Copyright &copy; 2025-2030 <a href="https://adminlte.io">AdminLTE.io</a>.</strong>
+      <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
       All rights reserved.
       <div class="float-right d-none d-sm-inline-block">
         <b>Version</b> 3.2.0
@@ -279,54 +269,47 @@
       });
 
       const scheduleView = document.getElementById('schedule-view');
-      const classSelector = document.getElementById('class-selector');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const teacherId = user ? user.id : null;
 
-      // Data Structure: Class -> Day -> Events
-      const classSchedules = {
-        classA: {
-          Monday: [
-            { subject: 'Mathematics', start: '09:00', end: '10:30', teacher: 'Mr. Smith', color: '#f56954' },
-            { subject: 'Physics', start: '11:00', end: '12:30', teacher: 'Dr. Brown', color: '#f39c12' },
-            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
-            { subject: 'History', start: '14:00', end: '15:30', teacher: 'Mrs. Davis', color: '#00c0ef' }
-          ],
-          Tuesday: [
-            { subject: 'English', start: '09:00', end: '10:30', teacher: 'Ms. Wilson', color: '#3c8dbc' },
-            { subject: 'Chemistry', start: '11:00', end: '12:30', teacher: 'Mr. White', color: '#f39c12' }
-          ],
-          Wednesday: [
-            { subject: 'Physical Ed', start: '08:00', end: '10:00', teacher: 'Coach Carter', color: '#605ca8' }
-          ],
-          Thursday: [
-            { subject: 'Biology', start: '09:00', end: '10:30', teacher: 'Dr. Green', color: '#00a65a' }
-          ],
-          Friday: [
-            { subject: 'Art', start: '10:00', end: '12:00', teacher: 'Ms. Palette', color: '#d81b60' }
-          ]
-        },
-        classB: {
-          Monday: [
-            { subject: 'Biology', start: '09:00', end: '10:30', teacher: 'Dr. Green', color: '#00a65a' },
-            { subject: 'Chemistry', start: '11:00', end: '12:30', teacher: 'Mr. White', color: '#f39c12' },
-            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
-            { subject: 'Geography', start: '14:00', end: '15:30', teacher: 'Mr. Globe', color: '#3c8dbc' }
-          ],
-          Tuesday: [], Wednesday: [], Thursday: [], Friday: []
-        },
-        classC: {
-          Monday: [
-            { subject: 'Art', start: '09:00', end: '11:00', teacher: 'Ms. Palette', color: '#605ca8' },
-            { subject: 'Lunch Break', start: '12:30', end: '13:30', teacher: '-', color: '#00a65a' },
-            { subject: 'Music', start: '13:30', end: '15:00', teacher: 'Mr. Melody', color: '#d81b60' }
-          ],
-          Tuesday: [], Wednesday: [], Thursday: [], Friday: []
-        }
-      };
+      if (!teacherId) {
+        console.error('Teacher ID not found in localStorage');
+        // Optional: Redirect to login if critical
+        // window.location.href = '../login.html';
+      }
 
       const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-      function renderSchedule(classId) {
-        const schedule = classSchedules[classId] || {};
+      function fetchTeacherSchedule() {
+        fetch(`http://localhost:8081/api/schedule/get/teacher/${teacherId}`, {
+          credentials: 'include'
+        })
+          .then(response => response.json())
+          .then(data => {
+            let scheduleData = [];
+            if (Array.isArray(data)) {
+              scheduleData = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              scheduleData = data.data;
+            }
+            renderSchedule(scheduleData);
+          })
+          .catch(error => {
+            console.error('Error fetching schedule:', error);
+            scheduleView.innerHTML = '<div class="alert alert-danger">Error loading schedule.</div>';
+          });
+      }
+
+      function renderSchedule(events) {
+        // Group events by day
+        const scheduleByDay = {};
+        daysOfWeek.forEach(day => scheduleByDay[day] = []);
+
+        events.forEach(event => {
+          if (event.day && scheduleByDay[event.day]) {
+            scheduleByDay[event.day].push(event);
+          }
+        });
 
         let html = `
           <table class="table table-bordered table-sm table-schedule">
@@ -346,23 +329,32 @@
               <tr>
         `;
 
-        // Table Body (Single row with cells for each day)
+        // Table Body
         daysOfWeek.forEach(day => {
-          const events = schedule[day] || [];
+          const dayEvents = scheduleByDay[day] || [];
+          // Sort events by start time
+          dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
           html += `<td>`;
 
-          if (events.length === 0) {
+          if (dayEvents.length === 0) {
             html += `<div class="text-muted text-center small mt-2">-</div>`;
           } else {
-            events.forEach(event => {
+            dayEvents.forEach(event => {
+              // Determine color based on subject (simple hash or predefined)
+              const subjectName = event.subjectName || event.subject || 'Unknown Subject';
+              const colors = ['#f56954', '#f39c12', '#00a65a', '#00c0ef', '#3c8dbc', '#d81b60', '#605ca8'];
+              const colorIndex = subjectName.length % colors.length;
+              const color = colors[colorIndex];
+
               html += `
-                <div class="schedule-item" style="border-left-color: ${event.color}">
-                  <div class="item-subject">${event.subject}</div>
+                <div class="schedule-item" style="border-left-color: ${color}">
+                  <div class="item-subject">${subjectName}</div>
                   <div class="item-time">
-                    <i class="far fa-clock"></i> ${event.start} - ${event.end}
+                    <i class="far fa-clock"></i> ${event.startTime} - ${event.endTime}
                   </div>
                   <div class="item-teacher">
-                    ${event.teacher}
+                    ${event.teacherName || ''} 
                   </div>
                 </div>
               `;
@@ -381,13 +373,8 @@
         scheduleView.innerHTML = html;
       }
 
-      // Initial Render
-      renderSchedule(classSelector.value);
-
-      // Event listener for dropdown change
-      classSelector.addEventListener('change', function () {
-        renderSchedule(this.value);
-      });
+      // Initial Fetch
+      fetchTeacherSchedule();
     });
   </script>
 

@@ -107,48 +107,7 @@
     </div>
 
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-dark">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
-        <!-- <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li> -->
-        <li class="nav-item d-none d-sm-inline-block">
-          <a href="../../index3.html" class="nav-link">Home</a>
-        </li>
-      </ul>
-
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="far fa-bell"></i>
-            <span class="badge badge-warning navbar-badge">15</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-            <span class="dropdown-item dropdown-header">15 Notifications</span>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-envelope mr-2"></i> 4 new messages
-              <span class="float-right text-muted text-sm">3 mins</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-users mr-2"></i> 8 friend requests
-              <span class="float-right text-muted text-sm">12 hours</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-file mr-2"></i> 3 new reports
-              <span class="float-right text-muted text-sm">2 days</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-          </div>
-        </li>
-      </ul>
-    </nav>
+    <div id="navbar-container"></div>
     <!-- /.navbar -->
 
     <!-- Main Sidebar Container -->
@@ -198,7 +157,7 @@
     </div>
     <!-- /.content-wrapper -->
     <footer class="main-footer">
-      <strong>Copyright &copy; 2025-2030 <a href="https://adminlte.io">AdminLTE.io</a>.</strong>
+      <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
       All rights reserved.
       <div class="float-right d-none d-sm-inline-block">
         <b>Version</b> 3.2.0
@@ -268,6 +227,8 @@
       $("#sidebar-container").load("sidebar.html", function () {
         $("#nav-schedule").addClass("active");
       });
+      // Load Navbar
+      $("#navbar-container").load("navbar.html");
 
       const scheduleView = document.getElementById('schedule-view');
       // const classSelector = document.getElementById('class-selector'); // Removed
@@ -289,7 +250,7 @@
       const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
       function fetchSubjects() {
-        fetch('http://localhost:8081/api/subject/list')
+        fetch('http://localhost:8081/api/subject/list', { credentials: 'include' })
           .then(response => response.json())
           .then(data => {
             let subjects = [];
@@ -322,7 +283,7 @@
         }
 
         const url = `http://localhost:8081/api/subject/list/teacher/${subjectName}`;
-        fetch(url)
+        fetch(url, { credentials: 'include' })
           .then(response => response.json())
           .then(data => {
             let teachers = [];
@@ -348,7 +309,7 @@
       }
 
       function fetchSchedule() {
-        fetch('http://localhost:8081/api/schedule/all')
+        fetch('http://localhost:8081/api/schedule/all', { credentials: 'include' })
           .then(response => response.json())
           .then(data => {
             // Reset schedule
@@ -489,7 +450,7 @@
         }
 
         // Fetch details from API
-        fetch(`http://localhost:8081/api/schedule/get/${scheduleId}`)
+        fetch(`http://localhost:8081/api/schedule/get/${scheduleId}`, { credentials: 'include' })
           .then(response => response.json())
           .then(data => {
             const event = data.data || data; // Handle potential response structure
@@ -520,7 +481,7 @@
           })
           .catch(error => {
             console.error('Error fetching schedule details:', error);
-            alert('Failed to load schedule details.');
+            showModal('Error', 'Failed to load schedule details.', 'error');
           });
       };
 
@@ -537,7 +498,7 @@
         if (subject && teacher && startTime && endTime) {
           // Basic validation
           if (startTime >= endTime) {
-            alert("End time must be after start time");
+            showModal('Validation Error', "End time must be after start time", 'warning');
             return;
           }
 
@@ -592,7 +553,8 @@
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            credentials: 'include'
           })
             .then(response => {
               if (response.ok) {
@@ -600,19 +562,19 @@
                 // Refresh schedule from API
                 fetchSchedule();
                 eventModal.modal('hide');
-                alert('Schedule updated successfully!');
+                showModal('Success', 'Schedule updated successfully!', 'success');
               } else {
                 console.log(payload)
-                alert('Failed to update schedule. Please try again.');
+                showModal('Error', 'Failed to update schedule. Please try again.', 'error');
               }
             })
             .catch(error => {
               console.error('Error updating schedule:', error);
-              alert('An error occurred while updating the schedule.');
+              showModal('Error', 'An error occurred while updating the schedule.', 'error');
             });
 
         } else {
-          alert('Please fill in all fields (Subject, Teacher, Start Time, End Time).');
+          showModal('Validation Error', 'Please fill in all fields (Subject, Teacher, Start Time, End Time).', 'warning');
         }
       });
 
@@ -621,21 +583,22 @@
         const eventId = document.getElementById('event-id').value;
         if (eventId && confirm('Are you sure you want to delete this class?')) {
           fetch(`http://localhost:8081/api/schedule/delete/${eventId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            credentials: 'include'
           })
             .then(response => {
               if (response.ok) {
                 console.log('Event deleted successfully:', eventId);
                 fetchSchedule();
                 eventModal.modal('hide');
-                alert('Schedule deleted successfully!');
+                showModal('Success', 'Schedule deleted successfully!', 'success');
               } else {
-                alert('Failed to delete schedule. Please try again.');
+                showModal('Error', 'Failed to delete schedule. Please try again.', 'error');
               }
             })
             .catch(error => {
               console.error('Error deleting schedule:', error);
-              alert('An error occurred while deleting the schedule.');
+              showModal('Error', 'An error occurred while deleting the schedule.', 'error');
             });
         }
       });
@@ -671,6 +634,8 @@
   <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../../dist/js/adminlte.js"></script>
+  <!-- Global Modal -->
+  <script src="../global-modal.js"></script>
 
 </body>
 

@@ -20,6 +20,38 @@ scratch. This page gets rid of all links and provides the needed markup only.
 </head>
 
 <body class="hold-transition dark-mode sidebar-mini">
+  <script>
+    (function () {
+      // Check for login
+      const user = localStorage.getItem('user');
+      if (!user) {
+        window.location.href = '../login.html';
+      }
+
+      // Intercept fetch to handle 401 and specific error messages
+      const originalFetch = window.fetch;
+      window.fetch = function () {
+        return originalFetch.apply(this, arguments).then(async response => {
+          if (response.status === 401) {
+            window.location.href = '../login.html';
+            return response;
+          }
+
+          // Check for specific JSON error message
+          const clone = response.clone();
+          try {
+            const data = await clone.json();
+            if (data.error === "UNAUTHORIZED" || data.message === "Please login first") {
+              window.location.href = '../login.html';
+            }
+          } catch (e) {
+            // Ignore if not JSON
+          }
+          return response;
+        });
+      };
+    })();
+  </script>
   <div class="wrapper">
 
     <!-- Navbar -->
@@ -30,137 +62,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="../../index3.html" class="nav-link">Home</a>
-        </li>
-        <li class="nav-item d-none d-sm-inline-block">
-          <a href="#" class="nav-link">Contact</a>
-        </li>
-      </ul>
-
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Navbar Search -->
-        <li class="nav-item">
-          <a class="nav-link" data-widget="navbar-search" href="#" role="button">
-            <i class="fas fa-search"></i>
-          </a>
-          <div class="navbar-search-block">
-            <form class="form-inline">
-              <div class="input-group input-group-sm">
-                <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
-                <div class="input-group-append">
-                  <button class="btn btn-navbar" type="submit">
-                    <i class="fas fa-search"></i>
-                  </button>
-                  <button class="btn btn-navbar" type="button" data-widget="navbar-search">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </li>
-
-        <!-- Messages Dropdown Menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="far fa-comments"></i>
-            <span class="badge badge-danger navbar-badge">3</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-            <a href="#" class="dropdown-item">
-              <!-- Message Start -->
-              <div class="media">
-                <img src="../../dist/img/user1-128x128.jpg" alt="User Avatar" class="img-size-50 mr-3 img-circle">
-                <div class="media-body">
-                  <h3 class="dropdown-item-title">
-                    Brad Diesel
-                    <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>
-                  </h3>
-                  <p class="text-sm">Call me whenever you can...</p>
-                  <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                </div>
-              </div>
-              <!-- Message End -->
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <!-- Message Start -->
-              <div class="media">
-                <img src="../../dist/img/user8-128x128.jpg" alt="User Avatar" class="img-size-50 img-circle mr-3">
-                <div class="media-body">
-                  <h3 class="dropdown-item-title">
-                    John Pierce
-                    <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>
-                  </h3>
-                  <p class="text-sm">I got your message bro</p>
-                  <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                </div>
-              </div>
-              <!-- Message End -->
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <!-- Message Start -->
-              <div class="media">
-                <img src="../../dist/img/user3-128x128.jpg" alt="User Avatar" class="img-size-50 img-circle mr-3">
-                <div class="media-body">
-                  <h3 class="dropdown-item-title">
-                    Nora Silvester
-                    <span class="float-right text-sm text-warning"><i class="fas fa-star"></i></span>
-                  </h3>
-                  <p class="text-sm">The subject goes here</p>
-                  <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                </div>
-              </div>
-              <!-- Message End -->
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
-          </div>
-        </li>
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="far fa-bell"></i>
-            <span class="badge badge-warning navbar-badge">15</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-            <span class="dropdown-header">15 Notifications</span>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-envelope mr-2"></i> 4 new messages
-              <span class="float-right text-muted text-sm">3 mins</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-users mr-2"></i> 8 friend requests
-              <span class="float-right text-muted text-sm">12 hours</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
-              <i class="fas fa-file mr-2"></i> 3 new reports
-              <span class="float-right text-muted text-sm">2 days</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-          </div>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-            <i class="fas fa-expand-arrows-alt"></i>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
-            <i class="fas fa-th-large"></i>
-          </a>
+          <a href="index.html" class="nav-link">Home</a>
         </li>
       </ul>
     </nav>
     <!-- /.navbar -->
 
-    <!-- Main Sidebar Container -->
     <!-- Main Sidebar Container -->
     <div id="sidebar-container"></div>
 
@@ -187,35 +94,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <!-- Main content -->
       <div class="content">
         <div class="container-fluid">
-          <div class="row mb-3">
-            <div class="col-12">
-              <div class="card card-primary card-outline">
-                <div class="card-header">
-                  <h3 class="card-title">Filter Students</h3>
-                </div>
-                <div class="card-body">
-                  <form class="form-inline">
-                    <label class="mr-2" for="subjectFilter">Select Subject:</label>
-                    <select class="form-control mr-2" id="subjectFilter">
-                      <option value="">Choose...</option>
-                      <option value="Mathematics">Mathematics</option>
-                      <option value="Physics">Physics</option>
-                      <option value="Biology">Biology</option>
-                      <option value="Chemistry">Chemistry</option>
-                      <option value="English">English</option>
-                      <option value="History">History</option>
-                    </select>
-                    <button type="button" class="btn btn-primary" id="filterBtn">Filter</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           <div class="row" id="studentListContainer">
             <!-- Student cards will be injected here -->
             <div class="col-12 text-center text-muted">
-              <p>Please select a subject to view students.</p>
+              <p>Loading students...</p>
             </div>
           </div>
         </div><!-- /.container-fluid -->
@@ -229,62 +113,73 @@ scratch. This page gets rid of all links and provides the needed markup only.
             $("#nav-reports").addClass("active");
           });
 
-          // Mock Data
-          var students = [
-            { id: 1, name: 'Ahmad Albab', subjects: ['Mathematics', 'Physics'] },
-            { id: 2, name: 'Siti Aminah', subjects: ['Mathematics', 'Biology', 'Chemistry'] },
-            { id: 3, name: 'John Doe', subjects: ['Physics', 'English'] },
-            { id: 4, name: 'Jane Smith', subjects: ['Mathematics', 'English', 'History'] },
-            { id: 5, name: 'Ali Baba', subjects: ['Biology', 'Chemistry'] },
-            { id: 6, name: 'Mei Ling', subjects: ['Mathematics', 'Physics'] },
-            { id: 7, name: 'Raju', subjects: ['History', 'English'] }
-          ];
+          const user = JSON.parse(localStorage.getItem('user'));
+          const teacherId = user ? user.id : null;
 
-          document.getElementById('filterBtn').addEventListener('click', function () {
-            var selectedSubject = document.getElementById('subjectFilter').value;
-            var container = document.getElementById('studentListContainer');
-            container.innerHTML = ''; // Clear current list
+          if (!teacherId) {
+            console.error('Teacher ID not found in localStorage');
+            return;
+          }
+          const container = document.getElementById('studentListContainer');
 
-            if (!selectedSubject) {
-              container.innerHTML = '<div class="col-12 text-center text-muted"><p>Please select a subject to view students.</p></div>';
+          function fetchStudents() {
+            // User requested api/tech/list/studentReviews/{teacherId}, assuming 'teach' based on context
+            fetch(`http://localhost:8081/api/teach/list/studentReviews/${teacherId}`, {
+              credentials: 'include'
+            })
+              .then(response => response.json())
+              .then(data => {
+                let students = [];
+                if (Array.isArray(data)) {
+                  students = data;
+                } else if (data.data && Array.isArray(data.data)) {
+                  students = data.data;
+                }
+
+                renderStudents(students);
+              })
+              .catch(error => {
+                console.error('Error fetching students:', error);
+                container.innerHTML = '<div class="col-12 text-center text-danger"><p>Error loading students.</p></div>';
+              });
+          }
+
+          function renderStudents(students) {
+            container.innerHTML = ''; // Clear loading message
+
+            if (students.length === 0) {
+              container.innerHTML = '<div class="col-12 text-center text-muted"><p>No students found.</p></div>';
               return;
             }
 
-            var filteredStudents = students.filter(function (s) {
-              return s.subjects.includes(selectedSubject);
-            });
+            students.forEach(function (student) {
+              // Handle new data structure: studentId, studentName, star, comment
+              const studentName = student.studentName || 'Unknown Student';
+              const studentId = student.studentId;
+              const star = student.star || 0;
+              const comment = student.comment || '';
 
-            if (filteredStudents.length === 0) {
-              container.innerHTML = '<div class="col-12 text-center text-muted"><p>No students found for this subject.</p></div>';
-              return;
-            }
-
-            filteredStudents.forEach(function (student) {
               var cardHtml = `
               <div class="col-md-6 col-lg-4">
                 <div class="card card-widget widget-user-2 shadow-sm">
                   <div class="widget-user-header bg-info">
-                    <div class="widget-user-image">
-                      <img class="img-circle elevation-2" src="../../dist/img/user1-128x128.jpg" alt="User Avatar">
-                    </div>
-                    <h3 class="widget-user-username">${student.name}</h3>
-                    <h5 class="widget-user-desc">${selectedSubject} Student</h5>
+                    <h3 class="widget-user-username ml-0">${studentName}</h3>
                   </div>
                   <div class="card-footer p-3">
-                    <form onsubmit="submitReview(event, '${student.name}')">
+                    <form onsubmit="submitReview(event, '${studentId}', '${studentName}')">
                       <div class="form-group">
                         <label>Comment</label>
-                        <textarea class="form-control" rows="3" placeholder="Enter your comment..." required></textarea>
+                        <textarea class="form-control" rows="3" placeholder="Enter your comment..." required>${comment}</textarea>
                       </div>
                       <div class="form-group">
                         <label>Rating</label>
-                        <div class="star-rating" data-student-id="${student.id}">
-                          <i class="far fa-star" data-value="1"></i>
-                          <i class="far fa-star" data-value="2"></i>
-                          <i class="far fa-star" data-value="3"></i>
-                          <i class="far fa-star" data-value="4"></i>
-                          <i class="far fa-star" data-value="5"></i>
-                          <input type="hidden" name="rating" value="0" required>
+                        <div class="star-rating" data-student-id="${studentId}">
+                          <i class="${star >= 1 ? 'fas text-warning' : 'far'} fa-star" data-value="1"></i>
+                          <i class="${star >= 2 ? 'fas text-warning' : 'far'} fa-star" data-value="2"></i>
+                          <i class="${star >= 3 ? 'fas text-warning' : 'far'} fa-star" data-value="3"></i>
+                          <i class="${star >= 4 ? 'fas text-warning' : 'far'} fa-star" data-value="4"></i>
+                          <i class="${star >= 5 ? 'fas text-warning' : 'far'} fa-star" data-value="5"></i>
+                          <input type="hidden" name="rating" value="${star}" required>
                         </div>
                       </div>
                       <button type="submit" class="btn btn-success btn-block">Submit Review</button>
@@ -298,7 +193,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
             // Initialize Star Rating Logic for new elements
             initStarRatings();
-          });
+          }
 
           function initStarRatings() {
             var stars = document.querySelectorAll('.star-rating i');
@@ -330,27 +225,60 @@ scratch. This page gets rid of all links and provides the needed markup only.
           }
 
           // Global function for submission
-          window.submitReview = function (event, studentName) {
+          window.submitReview = function (event, studentId, studentName) {
             event.preventDefault();
             var form = event.target;
             var rating = form.querySelector('input[name="rating"]').value;
+            var comment = form.querySelector('textarea').value;
+            const user = JSON.parse(localStorage.getItem('user'));
+            const teacherId = user ? user.id : null;
 
-            if (rating == 0) {
-              alert('Please select a star rating.');
+            if (!teacherId) {
+              showModal('Error', 'Teacher ID not found.', 'error');
               return;
             }
 
-            // Mock Submission
-            alert('Review submitted for ' + studentName + '!\nRating: ' + rating + ' Stars');
-            form.reset();
-            // Reset stars
-            var stars = form.querySelectorAll('.star-rating i');
-            stars.forEach(s => {
-              s.classList.remove('fas', 'text-warning');
-              s.classList.add('far');
-            });
-            form.querySelector('input[name="rating"]').value = 0;
+            if (rating == 0) {
+              showModal('Validation Error', 'Please select a star rating.', 'warning');
+              return;
+            }
+
+            const payload = {
+              teacherId: teacherId,
+              studentId: parseInt(studentId),
+              star: parseInt(rating),
+              comment: comment
+            };
+
+            console.log('Submitting review:', payload);
+
+            fetch('http://localhost:8081/api/teach/update/studentReview', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload),
+              credentials: 'include'
+            })
+              .then(response => {
+                if (response.ok) {
+                  return response.json();
+                } else {
+                  throw new Error('Failed to submit review');
+                }
+              })
+              .then(data => {
+                showModal('Success', 'Review submitted successfully for ' + studentName + '!', 'success');
+                // Do not reset form or stars, so the user sees their submitted review
+              })
+              .catch(error => {
+                console.error('Error submitting review:', error);
+                showModal('Error', 'Error submitting review. Please try again.', 'error');
+              });
           };
+
+          // Initial Fetch
+          fetchStudents();
         });
       </script>
       <style>
@@ -380,12 +308,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
     <!-- Main Footer -->
     <footer class="main-footer">
-      <!-- To the right -->
-      <div class="float-right d-none d-sm-inline">
-        Anything you want
+      <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
+      All rights reserved.
+      <div class="float-right d-none d-sm-inline-block">
+        <b>Version</b> 3.2.0
       </div>
-      <!-- Default to the left -->
-      <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
     </footer>
   </div>
   <!-- ./wrapper -->
@@ -398,6 +325,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../../dist/js/adminlte.min.js"></script>
+  <!-- Global Modal -->
+  <script src="../global-modal.js"></script>
 </body>
 
 </html>
