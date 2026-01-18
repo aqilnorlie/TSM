@@ -66,29 +66,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <form id="payment-form">
                   <div class="card-body p-5">
                     <div class="form-group">
-                      <label for="teacherName" class="font-weight-medium">Teacher Name</label>
-                      <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                          <span class="input-group-text bg-light border-right-0"><i
-                              class="fas fa-chalkboard-teacher text-primary"></i></span>
-                        </div>
-                        <select class="form-control border-left-0" id="teacherName" required>
-                          <option value="">Select Teacher</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label for="classSubject" class="font-weight-medium">Class / Subject</label>
-                      <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                          <span class="input-group-text bg-light border-right-0"><i
-                              class="fas fa-book-open text-info"></i></span>
-                        </div>
-                        <input type="text" class="form-control border-left-0" id="classSubject"
-                          placeholder="Auto-filled from Teacher" readonly>
-                      </div>
-                    </div>
-                    <div class="form-group">
                       <label for="studentName" class="font-weight-medium">Student Name</label>
                       <div class="input-group mb-3">
                         <div class="input-group-prepend">
@@ -100,6 +77,18 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         </select>
                       </div>
                     </div>
+                    <div class="form-group">
+                      <label for="classSubject" class="font-weight-medium">Subject</label>
+                      <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text bg-light border-right-0"><i
+                              class="fas fa-book-open text-info"></i></span>
+                        </div>
+                        <textarea class="form-control border-left-0" id="classSubject" rows="3"
+                          placeholder="Auto-filled from Student" disabled></textarea>
+                      </div>
+                    </div>
+
                     <div class="form-group">
                       <label for="amount" class="font-weight-medium">Amount (RM)</label>
                       <div class="input-group mb-3">
@@ -212,81 +201,84 @@ scratch. This page gets rid of all links and provides the needed markup only.
           // Set default date to today
           document.getElementById('paymentDate').valueAsDate = new Date();
 
-          const teacherSelect = document.getElementById('teacherName');
           const studentSelect = document.getElementById('studentName');
+          const subjectSelect = document.getElementById('classSubject');
 
-          // Fetch Teachers
-          fetch('http://localhost:8081/api/teacher/list', { credentials: 'include' })
+          // 1. Fetch All Students
+          fetch('http://localhost:8081/api/student/list', { credentials: 'include' })
             .then(response => response.json())
             .then(data => {
-              let teachers = [];
+              let students = [];
               if (Array.isArray(data)) {
-                teachers = data;
+                students = data;
               } else if (data.data && Array.isArray(data.data)) {
-                teachers = data.data;
+                students = data.data;
+              } else if (data.content && Array.isArray(data.content)) {
+                students = data.content;
               }
 
-              let options = '<option value="">Select Teacher</option>';
-              teachers.forEach(teacher => {
-                options += `<option value="${teacher.id}" data-name="${teacher.name}" data-subject="${teacher.subject || ''}">${teacher.name}</option>`;
+              console.log(students);
+
+              let options = '<option value="">Select Student</option>';
+              students.forEach(student => {
+                options += `<option value="${student.id}">${student.name}</option>`;
               });
-              teacherSelect.innerHTML = options;
+              studentSelect.innerHTML = options;
             })
-            .catch(error => console.error('Error fetching teachers:', error));
+            .catch(error => console.error('Error fetching students:', error));
 
-          // Fetch Students on Teacher Change
-          teacherSelect.addEventListener('change', function () {
-            const teacherId = this.value;
-            const teacherOption = this.options[this.selectedIndex];
-            const subject = teacherOption ? teacherOption.getAttribute('data-subject') : '';
+          // 2. Fetch Subjects when Student is Selected
+          studentSelect.addEventListener('change', function () {
+            const studentId = this.value;
 
-            // Auto-populate Subject
-            document.getElementById('classSubject').value = subject;
+            // Reset dependent fields
+            subjectSelect.value = '';
+            document.getElementById('donePaymentBtn').disabled = true; // Disable button by default
 
-            studentSelect.innerHTML = '<option value="">Loading...</option>';
+            if (!studentId) return;
 
-            if (!teacherId) {
-              studentSelect.innerHTML = '<option value="">Select Student</option>';
-              return;
-            }
-
-            fetch(`http://localhost:8081/api/teach/list/student/${teacherId}`, { credentials: 'include' })
+            fetch(`http://localhost:8081/api/student/list/studentSubject/${studentId}`, { credentials: 'include' })
               .then(response => response.json())
-              .then(data => {
-                let students = [];
-                if (Array.isArray(data)) {
-                  students = data;
-                } else if (data.data && Array.isArray(data.data)) {
-                  students = data.data;
+              .then(res => {
+                let subjects = [];
+                if (res.data && Array.isArray(res.data)) {
+                  subjects = res.data;
+                } else if (Array.isArray(res)) {
+                  subjects = res;
                 }
 
-                let options = '<option value="">Select Student</option>';
-                students.forEach(student => {
-                  // Handle potential student object structure (e.g., if it has id and name)
-                  const studentName = student.studentName || student.name || student;
-                  // Use ID if available, otherwise fallback to name/object
-                  const studentValue = student.id || student.studentId || studentName;
-                  options += `<option value="${studentValue}">${studentName}</option>`;
-                });
-                studentSelect.innerHTML = options;
+                console.log(subjects);
+
+                if (subjects.length === 0) {
+                  subjectSelect.value = 'Student does not take any subject';
+                  // Button remains disabled
+                } else {
+                  let subjectList = subjects.map(sub => sub.subjectName).join('\n');
+                  subjectSelect.value = subjectList;
+                  document.getElementById('donePaymentBtn').disabled = false; // Enable button if subjects exist
+                }
               })
               .catch(error => {
-                console.error('Error fetching students:', error);
-                studentSelect.innerHTML = '<option value="">Select Student</option>';
+                console.error('Error fetching student subjects:', error);
+                subjectSelect.value = 'Error loading subjects';
               });
           });
 
+          // 3. Auto-fill Teacher when Subject is Selected (Removed visual field, but logic kept for data if needed internally, though mostly handled in submit now)
+          // subjectSelect.addEventListener('change', function () { ... });
+
           document.getElementById('donePaymentBtn').addEventListener('click', function () {
             // Get values
-            var teacherOption = teacherSelect.options[teacherSelect.selectedIndex];
-            var teacher = teacherOption ? teacherOption.getAttribute('data-name') : ''; // Get name for receipt
-
+            // Get values
             var studentSelect = document.getElementById('studentName');
             var studentOption = studentSelect.options[studentSelect.selectedIndex];
-            var studentName = studentOption ? studentOption.text : ''; // Get name for receipt
+            var studentName = studentOption ? studentOption.text : '';
             var studentId = studentSelect.value;
 
-            var subject = document.getElementById('classSubject').value;
+            var subjectSelect = document.getElementById('classSubject');
+            var subject = subjectSelect.value;
+            var teacher = "-"; // Teacher info is now embedded in the subject list
+
             var amount = document.getElementById('amount').value;
             var date = document.getElementById('paymentDate').value;
 

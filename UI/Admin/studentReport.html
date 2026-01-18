@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<!--
+This is a starter template page. Use this page to start your new project from
+scratch. This page gets rid of all links and provides the needed markup only.
+-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sinar Warisan | Student Reports</title>
+
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+</head>
+
+<body class="hold-transition dark-mode sidebar-mini">
+    <div class="wrapper">
+
+        <!-- Navbar -->
+        <div id="navbar-container"></div>
+        <!-- /.navbar -->
+
+        <!-- Main Sidebar Container -->
+        <div id="sidebar-container"></div>
+        <!-- /.sidebar -->
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">Student Reports by Teacher</h1>
+                        </div><!-- /.col -->
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                <li class="breadcrumb-item active">Student Reports</li>
+                            </ol>
+                        </div><!-- /.col -->
+                    </div><!-- /.row -->
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content-header -->
+
+            <!-- Main content -->
+            <div class="content">
+                <div class="container-fluid">
+
+                    <!-- Teacher Selection -->
+                    <div class="row mb-4">
+                        <div class="col-md-12 col-xl-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">Select Teacher</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="teacherSelect">Teacher</label>
+                                        <select class="form-control" id="teacherSelect">
+                                            <option value="">Select a Teacher</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reports Container -->
+                    <div class="row" id="studentListContainer">
+                        <!-- Student cards will be injected here -->
+                        <div class="col-12 text-center text-muted">
+                            <p>Please select a teacher to view reports.</p>
+                        </div>
+                    </div>
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content -->
+        </div>
+        <!-- /.content-wrapper -->
+
+        <!-- Control Sidebar -->
+        <aside class="control-sidebar control-sidebar-dark">
+            <!-- Control sidebar content goes here -->
+            <div class="p-3">
+                <h5>Title</h5>
+                <p>Sidebar content</p>
+            </div>
+        </aside>
+        <!-- /.control-sidebar -->
+
+        <!-- Main Footer -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 3.2.0
+            </div>
+        </footer>
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- REQUIRED SCRIPTS -->
+
+    <!-- jQuery -->
+    <script src="../../plugins/jquery/jquery.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="../../dist/js/adminlte.min.js"></script>
+    <!-- Global Modal -->
+    <script src="../global-modal.js"></script>
+
+    <script>
+        $(function () {
+            // Load Sidebar
+            $("#sidebar-container").load("sidebar.html", function () {
+                // You might want to add an active class to a new menu item if you add one
+                $("#nav-student-reports").addClass("active");
+            });
+            // Load Navbar
+            $("#navbar-container").load("navbar.html");
+
+            const teacherSelect = document.getElementById('teacherSelect');
+            const container = document.getElementById('studentListContainer');
+
+            // Fetch Teachers
+            fetch('http://localhost:8081/api/teacher/list', { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => {
+                    let teachers = [];
+                    if (Array.isArray(data)) {
+                        teachers = data;
+                    } else if (data.data && Array.isArray(data.data)) {
+                        teachers = data.data;
+                    }
+
+                    let options = '<option value="">Select a Teacher</option>';
+                    teachers.forEach(teacher => {
+                        options += `<option value="${teacher.id}">${teacher.name}</option>`;
+                    });
+                    teacherSelect.innerHTML = options;
+                })
+                .catch(error => console.error('Error fetching teachers:', error));
+
+            // Handle Teacher Selection
+            teacherSelect.addEventListener('change', function () {
+                const teacherId = this.value;
+                if (!teacherId) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted"><p>Please select a teacher to view reports.</p></div>';
+                    return;
+                }
+                fetchStudents(teacherId);
+            });
+
+            function fetchStudents(teacherId) {
+                container.innerHTML = '<div class="col-12 text-center text-muted"><p>Loading reports...</p></div>';
+
+                fetch(`http://localhost:8081/api/teach/list/studentReviews/${teacherId}`, {
+                    credentials: 'include'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        let students = [];
+                        if (Array.isArray(data)) {
+                            students = data;
+                        } else if (data.data && Array.isArray(data.data)) {
+                            students = data.data;
+                        }
+
+                        renderStudents(students, teacherId);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching students:', error);
+                        container.innerHTML = '<div class="col-12 text-center text-danger"><p>Error loading reports.</p></div>';
+                    });
+            }
+
+            function renderStudents(students, teacherId) {
+                container.innerHTML = ''; // Clear loading message
+
+                if (students.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted"><p>No students found for this teacher.</p></div>';
+                    return;
+                }
+
+                students.forEach(function (student) {
+                    const studentName = student.studentName || 'Unknown Student';
+                    const studentId = student.studentId;
+                    const star = student.star || 0;
+                    const comment = student.comment || '';
+
+                    var cardHtml = `
+              <div class="col-md-6 col-lg-4">
+                <div class="card card-widget widget-user-2 shadow-sm">
+                  <div class="widget-user-header bg-info">
+                    <h3 class="widget-user-username ml-0">${studentName}</h3>
+                  </div>
+                  <div class="card-footer p-3">
+                    <form>
+                      <div class="form-group">
+                        <label>Comment</label>
+                        <textarea class="form-control" rows="3" placeholder="No comment provided" disabled>${comment}</textarea>
+                      </div>
+                      <div class="form-group">
+                        <label>Rating</label>
+                        <div class="star-rating" data-student-id="${studentId}">
+                          <i class="${star >= 1 ? 'fas text-warning' : 'far'} fa-star"></i>
+                          <i class="${star >= 2 ? 'fas text-warning' : 'far'} fa-star"></i>
+                          <i class="${star >= 3 ? 'fas text-warning' : 'far'} fa-star"></i>
+                          <i class="${star >= 4 ? 'fas text-warning' : 'far'} fa-star"></i>
+                          <i class="${star >= 5 ? 'fas text-warning' : 'far'} fa-star"></i>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            `;
+                    container.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+                // initStarRatings(); // Disabled for read-only view
+            }
+
+            function initStarRatings() {
+                // Disabled for read-only
+            }
+
+            // Global function for submission (Removed for read-only)
+            // window.submitReview = function ...
+        });
+    </script>
+    <style>
+        .star-rating i {
+            font-size: 1.5rem;
+            margin-right: 5px;
+            color: #ccc;
+            /* transition: color 0.2s; */
+        }
+
+        .star-rating i.text-warning {
+            color: #ffc107;
+        }
+    </style>
+</body>
+
+</html>

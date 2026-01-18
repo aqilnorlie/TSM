@@ -270,17 +270,40 @@
 
       const scheduleView = document.getElementById('schedule-view');
       const user = JSON.parse(localStorage.getItem('user'));
-      const teacherId = user ? user.id : null;
+      const userId = user ? user.id : null;
 
-      if (!teacherId) {
-        console.error('Teacher ID not found in localStorage');
+      console.log(userId);
+
+      if (!userId) {
+        console.error('User ID not found in localStorage');
         // Optional: Redirect to login if critical
         // window.location.href = '../login.html';
+        return;
       }
+
+      // New Logic: Fetch Teacher Info first
+      fetch(`http://localhost:8081/api/teacher/list/teacherInfoByUserId/${userId}`, {
+        credentials: 'include'
+      })
+        .then(response => response.json())
+        .then(res => {
+          if (res.status === 'success' && res.data && res.data.length > 0) {
+            const teacherId = res.data[0].id;
+            console.log('Resolved Teacher ID:', teacherId);
+            fetchTeacherSchedule(teacherId);
+          } else {
+            console.error('Teacher info not found for user ID:', userId);
+            scheduleView.innerHTML = '<div class="alert alert-warning">Teacher profile not found. Please contact admin.</div>';
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching teacher info:', err);
+          scheduleView.innerHTML = '<div class="alert alert-danger">Error loading teacher profile.</div>';
+        });
 
       const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-      function fetchTeacherSchedule() {
+      function fetchTeacherSchedule(teacherId) {
         fetch(`http://localhost:8081/api/schedule/get/teacher/${teacherId}`, {
           credentials: 'include'
         })
@@ -374,7 +397,8 @@
       }
 
       // Initial Fetch
-      fetchTeacherSchedule();
+      // Initial Fetch is now triggered inside the first fetch chain
+      // fetchTeacherSchedule();
     });
   </script>
 

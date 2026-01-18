@@ -114,15 +114,35 @@ scratch. This page gets rid of all links and provides the needed markup only.
           });
 
           const user = JSON.parse(localStorage.getItem('user'));
-          const teacherId = user ? user.id : null;
+          const userId = user ? user.id : null;
 
-          if (!teacherId) {
-            console.error('Teacher ID not found in localStorage');
+          if (!userId) {
+            console.error('User ID not found in localStorage');
             return;
           }
           const container = document.getElementById('studentListContainer');
 
-          function fetchStudents() {
+          // New Logic: Fetch Teacher Info first
+          fetch(`http://localhost:8081/api/teacher/list/teacherInfoByUserId/${userId}`, {
+            credentials: 'include'
+          })
+            .then(response => response.json())
+            .then(res => {
+              if (res.status === 'success' && res.data && res.data.length > 0) {
+                const teacherId = res.data[0].id;
+                console.log('Resolved Teacher ID:', teacherId);
+                fetchStudents(teacherId);
+              } else {
+                console.error('Teacher info not found for user ID:', userId);
+                container.innerHTML = '<div class="col-12 text-center text-danger"><p>Teacher profile not found.</p></div>';
+              }
+            })
+            .catch(err => {
+              console.error('Error fetching teacher info:', err);
+              container.innerHTML = '<div class="col-12 text-center text-danger"><p>Error loading teacher profile.</p></div>';
+            });
+
+          function fetchStudents(teacherId) {
             // User requested api/tech/list/studentReviews/{teacherId}, assuming 'teach' based on context
             fetch(`http://localhost:8081/api/teach/list/studentReviews/${teacherId}`, {
               credentials: 'include'
@@ -231,10 +251,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
             var rating = form.querySelector('input[name="rating"]').value;
             var comment = form.querySelector('textarea').value;
             const user = JSON.parse(localStorage.getItem('user'));
-            const teacherId = user ? user.id : null;
+            const userId = user ? user.id : null;
 
-            if (!teacherId) {
-              showModal('Error', 'Teacher ID not found.', 'error');
+            if (!userId) {
+              showModal('Error', 'User ID not found.', 'error');
               return;
             }
 
@@ -243,23 +263,36 @@ scratch. This page gets rid of all links and provides the needed markup only.
               return;
             }
 
-            const payload = {
-              teacherId: teacherId,
-              studentId: parseInt(studentId),
-              star: parseInt(rating),
-              comment: comment
-            };
-
-            console.log('Submitting review:', payload);
-
-            fetch('http://localhost:8081/api/teach/update/studentReview', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(payload),
+            // Resolve Teacher ID first
+            fetch(`http://localhost:8081/api/teacher/list/teacherInfoByUserId/${userId}`, {
               credentials: 'include'
             })
+              .then(response => response.json())
+              .then(res => {
+                if (res.status === 'success' && res.data && res.data.length > 0) {
+                  const teacherId = res.data[0].id;
+
+                  const payload = {
+                    teacherId: teacherId,
+                    studentId: parseInt(studentId),
+                    star: parseInt(rating),
+                    comment: comment
+                  };
+
+                  console.log('Submitting review:', payload);
+
+                  return fetch('http://localhost:8081/api/teach/update/studentReview', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload),
+                    credentials: 'include'
+                  });
+                } else {
+                  throw new Error('Teacher profile not found');
+                }
+              })
               .then(response => {
                 if (response.ok) {
                   return response.json();
@@ -269,7 +302,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
               })
               .then(data => {
                 showModal('Success', 'Review submitted successfully for ' + studentName + '!', 'success');
-                // Do not reset form or stars, so the user sees their submitted review
               })
               .catch(error => {
                 console.error('Error submitting review:', error);
@@ -277,8 +309,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
               });
           };
 
-          // Initial Fetch
-          fetchStudents();
+          // Initial Fetch triggered by logic above
+          // fetchStudents();
         });
       </script>
       <style>
