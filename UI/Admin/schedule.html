@@ -502,6 +502,27 @@
             return;
           }
 
+          // Check for conflicts
+          const existingEvents = weeklySchedule[day] || [];
+          const hasConflict = existingEvents.some(event => {
+            // Skip if it's the same event we are editing
+            // Note: event.id might be number or string, eventId from input is string.
+            // eventId comes from document.getElementById('event-id').value
+            const currentEventId = document.getElementById('event-id').value;
+            if (currentEventId && String(event.id) === String(currentEventId)) {
+              return false;
+            }
+
+            // Check overlap: (StartA < EndB) and (EndA > StartB)
+            // Using string comparison for HH:mm format works correctly
+            return (startTime < event.end && endTime > event.start);
+          });
+
+          if (hasConflict) {
+            showModal('Schedule Conflict', 'The selected day and time are already booked by another subject.', 'warning');
+            return;
+          }
+
           const colorMap = {
             'Mathematics': '#f56954',
             'Physics': '#f39c12',
