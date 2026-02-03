@@ -66,15 +66,16 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <form id="payment-form">
                   <div class="card-body p-5">
                     <div class="form-group">
-                      <label for="studentName" class="font-weight-medium">Student Name</label>
-                      <div class="input-group mb-3">
+                      <label for="studentSearchInput" class="font-weight-medium">Student Name</label>
+                      <div class="input-group mb-3 position-relative">
                         <div class="input-group-prepend">
                           <span class="input-group-text bg-light border-right-0"><i
                               class="fas fa-user-graduate text-success"></i></span>
                         </div>
-                        <select class="form-control border-left-0" id="studentName" required>
-                          <option value="">Select Student</option>
-                        </select>
+                        <input type="text" class="form-control border-left-0" id="studentSearchInput"
+                          placeholder="Type to search student..." autocomplete="off">
+                        <input type="hidden" id="studentId" required>
+                        <div id="studentSuggestions" class="suggestions-list"></div>
                       </div>
                     </div>
                     <div class="form-group">
@@ -201,39 +202,94 @@ scratch. This page gets rid of all links and provides the needed markup only.
           // Set default date to today
           document.getElementById('paymentDate').valueAsDate = new Date();
 
-          const studentSelect = document.getElementById('studentName');
+          const studentInput = document.getElementById('studentSearchInput');
+          const studentIdInput = document.getElementById('studentId');
+          const suggestionsBox = document.getElementById('studentSuggestions');
           const subjectSelect = document.getElementById('classSubject');
+          const donePaymentBtn = document.getElementById('donePaymentBtn');
 
-          // 1. Fetch All Students
+          let allStudents = [];
+
+          // 1. Fetch All Students and store globally
           fetch('http://localhost:8081/api/student/list', { credentials: 'include' })
             .then(response => response.json())
             .then(data => {
-              let students = [];
               if (Array.isArray(data)) {
-                students = data;
+                allStudents = data;
               } else if (data.data && Array.isArray(data.data)) {
-                students = data.data;
+                allStudents = data.data;
               } else if (data.content && Array.isArray(data.content)) {
-                students = data.content;
+                allStudents = data.content;
               }
-
-              console.log(students);
-
-              let options = '<option value="">Select Student</option>';
-              students.forEach(student => {
-                options += `<option value="${student.id}">${student.name}</option>`;
-              });
-              studentSelect.innerHTML = options;
+              console.log('Students loaded:', allStudents.length);
             })
             .catch(error => console.error('Error fetching students:', error));
 
-          // 2. Fetch Subjects when Student is Selected
-          studentSelect.addEventListener('change', function () {
-            const studentId = this.value;
+          // 2. Search Input Event Listener
+          studentInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            suggestionsBox.innerHTML = '';
 
+            if (query.length === 0) {
+              suggestionsBox.style.display = 'none';
+              return;
+            }
+
+            const filteredStudents = allStudents.filter(student =>
+              student.name.toLowerCase().includes(query)
+            );
+
+            if (filteredStudents.length > 0) {
+              filteredStudents.forEach(student => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = student.name;
+                item.addEventListener('click', function () {
+                  selectStudent(student);
+                });
+                suggestionsBox.appendChild(item);
+              });
+              suggestionsBox.style.display = 'block';
+            } else {
+              const noResult = document.createElement('div');
+              noResult.className = 'suggestion-item text-muted font-italic';
+              noResult.textContent = 'No student found';
+              noResult.style.cursor = 'default';
+              suggestionsBox.appendChild(noResult);
+              suggestionsBox.style.display = 'block';
+            }
+          });
+
+          // Clear ID when user modifies text, forcing re-selection
+          studentInput.addEventListener('input', function () {
+            studentIdInput.value = ''; // Invalidates current selection
+            subjectSelect.value = '';
+            document.getElementById('amount').value = '';
+            donePaymentBtn.disabled = true;
+          });
+
+          // Hide suggestions when clicking outside
+          document.addEventListener('click', function (e) {
+            if (!studentInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+              suggestionsBox.style.display = 'none';
+            }
+          });
+
+          // Function to handle student selection
+          function selectStudent(student) {
+            studentInput.value = student.name;
+            studentIdInput.value = student.id;
+            suggestionsBox.style.display = 'none';
+
+            // Trigger subject fetch
+            fetchStudentSubjects(student.id);
+          }
+
+          // 3. Fetch Subjects when Student is Selected
+          function fetchStudentSubjects(studentId) {
             // Reset dependent fields
             subjectSelect.value = '';
-            document.getElementById('donePaymentBtn').disabled = true; // Disable button by default
+            donePaymentBtn.disabled = true; // Disable button by default
 
             if (!studentId) return;
 
@@ -261,7 +317,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                   const price = subjects.length * 50;
                   document.getElementById('amount').value = price;
 
-                  document.getElementById('donePaymentBtn').disabled = false; // Enable button if subjects exist
+                  donePaymentBtn.disabled = false; // Enable button if subjects exist
                 }
               })
               .catch(error => {
@@ -269,18 +325,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 subjectSelect.value = 'Error loading subjects';
                 document.getElementById('amount').value = '';
               });
-          });
+          }
 
-          // 3. Auto-fill Teacher when Subject is Selected (Removed visual field, but logic kept for data if needed internally, though mostly handled in submit now)
-          // subjectSelect.addEventListener('change', function () { ... });
-
-          document.getElementById('donePaymentBtn').addEventListener('click', function () {
+          donePaymentBtn.addEventListener('click', function () {
             // Get values
-            // Get values
-            var studentSelect = document.getElementById('studentName');
-            var studentOption = studentSelect.options[studentSelect.selectedIndex];
-            var studentName = studentOption ? studentOption.text : '';
-            var studentId = studentSelect.value;
+            var studentName = studentInput.value;
+            var studentId = studentIdInput.value;
 
             var subjectSelect = document.getElementById('classSubject');
             var subject = subjectSelect.value;
@@ -290,8 +340,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
             var date = document.getElementById('paymentDate').value;
 
             // Simple validation
-            if (!teacher || !studentId || !subject || !amount || !date) {
-              showModal('Validation Error', 'Please fill in all fields', 'warning');
+            if (!studentId) {
+              showModal('Validation Error', 'Student name not found. Please select a valid student from the list.', 'error');
+              return;
+            }
+
+            if (!teacher || !subject || !amount || !date) {
+              showModal('Validation Error', 'Please select a valid student and fill in all fields', 'warning');
               return;
             }
 
@@ -408,6 +463,69 @@ scratch. This page gets rid of all links and provides the needed markup only.
           .receipt-container {
             border: 2px solid #000;
           }
+        }
+
+        /* Suggestions List Styles */
+        .suggestions-list {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          background: white;
+          border: 1px solid #ced4da;
+          border-top: none;
+          max-height: 200px;
+          overflow-y: auto;
+          display: none;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          border-radius: 0 0 0.25rem 0.25rem;
+        }
+
+        .suggestion-item {
+          padding: 10px 15px;
+          cursor: pointer;
+          border-bottom: 1px solid #f0f0f0;
+          color: #333;
+        }
+
+        .suggestion-item:last-child {
+          border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+          background-color: #f8f9fa;
+          color: #007bff;
+        }
+
+        .suggestion-item.text-muted:hover {
+          background-color: white;
+          color: #6c757d;
+        }
+
+        /* Dark Mode Support */
+        .dark-mode .suggestions-list {
+          background-color: #3f474e;
+          border-color: #6c757d;
+        }
+
+        .dark-mode .suggestion-item {
+          border-bottom-color: #4b545c;
+          color: #fff;
+        }
+
+        .dark-mode .suggestion-item:hover {
+          background-color: #4b545c;
+          color: #fff;
+        }
+
+        .dark-mode .suggestion-item.text-muted {
+          color: #adb5bd !important;
+        }
+
+        .dark-mode .suggestion-item.text-muted:hover {
+          background-color: #3f474e;
+          color: #adb5bd !important;
         }
       </style>
     </div>

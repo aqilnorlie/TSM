@@ -244,6 +244,14 @@
                     return;
                 }
 
+                // Password Validation
+                // At least 8 chars, 1 uppercase, 1 special char
+                const passwordRegex = /^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+                if (!passwordRegex.test(newPassword)) {
+                    showModal('Validation Error', 'Password must be at least 8 characters long, contain at least one uppercase letter, and one special character.', 'warning');
+                    return;
+                }
+
                 const payload = new URLSearchParams({
                     oldPassword: oldPassword,
                     newPassword: newPassword

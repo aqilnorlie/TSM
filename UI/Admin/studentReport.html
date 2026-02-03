@@ -63,10 +63,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 </div>
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label for="teacherSelect">Teacher</label>
-                                        <select class="form-control" id="teacherSelect">
-                                            <option value="">Select a Teacher</option>
-                                        </select>
+                                        <label for="teacherSearchInput">Teacher</label>
+                                        <div class="input-group position-relative">
+                                            <input type="text" class="form-control" id="teacherSearchInput"
+                                                placeholder="Type to search teacher..." autocomplete="off">
+                                            <input type="hidden" id="teacherId">
+                                            <div id="teacherSuggestions" class="suggestions-list"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -128,37 +131,80 @@ scratch. This page gets rid of all links and provides the needed markup only.
             // Load Navbar
             $("#navbar-container").load("navbar.html");
 
-            const teacherSelect = document.getElementById('teacherSelect');
+            const teacherInput = document.getElementById('teacherSearchInput');
+            const teacherIdInput = document.getElementById('teacherId');
+            const suggestionsBox = document.getElementById('teacherSuggestions');
             const container = document.getElementById('studentListContainer');
+
+            let allTeachers = [];
 
             // Fetch Teachers
             fetch('http://localhost:8081/api/teacher/list', { credentials: 'include' })
                 .then(response => response.json())
                 .then(data => {
-                    let teachers = [];
                     if (Array.isArray(data)) {
-                        teachers = data;
+                        allTeachers = data;
                     } else if (data.data && Array.isArray(data.data)) {
-                        teachers = data.data;
+                        allTeachers = data.data;
                     }
-
-                    let options = '<option value="">Select a Teacher</option>';
-                    teachers.forEach(teacher => {
-                        options += `<option value="${teacher.id}">${teacher.name}</option>`;
-                    });
-                    teacherSelect.innerHTML = options;
+                    console.log('Teachers loaded:', allTeachers.length);
                 })
                 .catch(error => console.error('Error fetching teachers:', error));
 
-            // Handle Teacher Selection
-            teacherSelect.addEventListener('change', function () {
-                const teacherId = this.value;
-                if (!teacherId) {
-                    container.innerHTML = '<div class="col-12 text-center text-muted"><p>Please select a teacher to view reports.</p></div>';
+            // Search Input Logic
+            teacherInput.addEventListener('input', function () {
+                const query = this.value.toLowerCase();
+                suggestionsBox.innerHTML = '';
+
+                if (query.length === 0) {
+                    suggestionsBox.style.display = 'none';
                     return;
                 }
-                fetchStudents(teacherId);
+
+                const filteredTeachers = allTeachers.filter(teacher =>
+                    teacher.name.toLowerCase().includes(query)
+                );
+
+                if (filteredTeachers.length > 0) {
+                    filteredTeachers.forEach(teacher => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.textContent = teacher.name;
+                        item.addEventListener('click', function () {
+                            selectTeacher(teacher);
+                        });
+                        suggestionsBox.appendChild(item);
+                    });
+                    suggestionsBox.style.display = 'block';
+                } else {
+                    const noResult = document.createElement('div');
+                    noResult.className = 'suggestion-item text-muted font-italic';
+                    noResult.textContent = 'No teacher found';
+                    noResult.style.cursor = 'default';
+                    suggestionsBox.appendChild(noResult);
+                    suggestionsBox.style.display = 'block';
+                }
             });
+
+            // Reselection Logic: Clear ID when typing changes
+            teacherInput.addEventListener('input', function () {
+                teacherIdInput.value = '';
+                container.innerHTML = '<div class="col-12 text-center text-muted"><p>Please select a teacher to view reports.</p></div>';
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!teacherInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+
+            function selectTeacher(teacher) {
+                teacherInput.value = teacher.name;
+                teacherIdInput.value = teacher.id;
+                suggestionsBox.style.display = 'none';
+                fetchStudents(teacher.id);
+            }
 
             function fetchStudents(teacherId) {
                 container.innerHTML = '<div class="col-12 text-center text-muted"><p>Loading reports...</p></div>';
@@ -248,6 +294,69 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
         .star-rating i.text-warning {
             color: #ffc107;
+        }
+
+        /* Suggestions List Styles */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 0.25rem 0.25rem;
+        }
+
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+        }
+
+        .suggestion-item.text-muted:hover {
+            background-color: white;
+            color: #6c757d;
+        }
+
+        /* Dark Mode Support */
+        .dark-mode .suggestions-list {
+            background-color: #3f474e;
+            border-color: #6c757d;
+        }
+
+        .dark-mode .suggestion-item {
+            border-bottom-color: #4b545c;
+            color: #fff;
+        }
+
+        .dark-mode .suggestion-item:hover {
+            background-color: #4b545c;
+            color: #fff;
+        }
+
+        .dark-mode .suggestion-item.text-muted {
+            color: #adb5bd !important;
+        }
+
+        .dark-mode .suggestion-item.text-muted:hover {
+            background-color: #3f474e;
+            color: #adb5bd !important;
         }
     </style>
 </body>
