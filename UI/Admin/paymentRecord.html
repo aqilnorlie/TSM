@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payment Records | Sinar Warisan</title>
+
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="../../plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+    <link rel="stylesheet" href="../../plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+</head>
+
+<body class="hold-transition dark-mode sidebar-mini">
+    <div class="wrapper">
+
+        <!-- Navbar -->
+        <div id="navbar-container"></div>
+        <!-- /.navbar -->
+
+        <!-- Main Sidebar Container -->
+        <div id="sidebar-container"></div>
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">Payment Records</h1>
+                        </div><!-- /.col -->
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                <li class="breadcrumb-item active">Payment Records</li>
+                            </ol>
+                        </div><!-- /.col -->
+                    </div><!-- /.row -->
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content-header -->
+
+            <!-- Main content -->
+            <div class="content">
+                <div class="container-fluid">
+
+                    <!-- Search Card -->
+                    <div class="row mb-4">
+                        <div class="col-md-12 col-xl-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">Select Student</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="studentSearchInput">Student</label>
+                                        <div class="input-group position-relative">
+                                            <input type="text" class="form-control" id="studentSearchInput"
+                                                placeholder="Type to search student..." autocomplete="off">
+                                            <input type="hidden" id="studentId">
+                                            <div id="studentSuggestions" class="suggestions-list"></div>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-default" type="button" id="searchBtn">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card" id="resultsCard" style="display: none;">
+                                <div class="card-header">
+                                    <h3 class="card-title">Payment History</h3>
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    <table id="paymentTable" class="table table-bordered table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Student Name</th>
+                                                <th>Date</th>
+                                                <th>Amount (RM)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="paymentTableBody">
+                                            <!-- Rows populated by DataTables -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                            <!-- /.card -->
+                        </div>
+                    </div>
+                    <!-- /.row -->
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content -->
+        </div>
+        <!-- /.content-wrapper -->
+
+        <!-- Main Footer -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025-2030 <a href="">Sinar Warisan</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 3.2.0
+            </div>
+        </footer>
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- REQUIRED SCRIPTS -->
+
+    <!-- jQuery -->
+    <script src="../../plugins/jquery/jquery.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables  & Plugins -->
+    <script src="../../plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="../../plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="../../plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+    <script src="../../plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="../../plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="../../dist/js/adminlte.min.js"></script>
+
+    <style>
+        /* Suggestions List Styles */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 0.25rem 0.25rem;
+        }
+
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+        }
+
+        /* Dark Mode Support */
+        .dark-mode .suggestions-list {
+            background-color: #3f474e;
+            border-color: #6c757d;
+        }
+
+        .dark-mode .suggestion-item {
+            border-bottom-color: #4b545c;
+            color: #fff;
+        }
+
+        .dark-mode .suggestion-item:hover {
+            background-color: #4b545c;
+            color: #fff;
+        }
+    </style>
+
+    <script>
+        $(function () {
+            // Load Sidebar
+            $("#sidebar-container").load("sidebar.html", function () {
+                $("#nav-payment-record").addClass("active");
+            });
+            // Load Navbar
+            $("#navbar-container").load("navbar.html");
+
+            // Elements
+            const studentInput = document.getElementById('studentSearchInput');
+            const suggestionsBox = document.getElementById('studentSuggestions');
+            const searchBtn = document.getElementById('searchBtn');
+            const resultsCard = document.getElementById('resultsCard');
+
+            let allPayments = [];
+            let table;
+
+            // Initialize DataTable (Empty)
+            table = $('#paymentTable').DataTable({
+                "paging": true,
+                "lengthChange": false,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+                "columns": [
+                    { "data": "studentName" },
+                    { "data": "date" },
+                    { "data": "amount" }
+                ]
+            });
+
+            // Fetch All Payments
+            fetch('http://localhost:8081/api/payment/list', { credentials: 'include' })
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status === 'success' && Array.isArray(res.data)) {
+                        allPayments = res.data;
+                        console.log('Payments loaded:', allPayments.length);
+                    }
+                })
+                .catch(err => console.error('Error fetching payments:', err));
+
+            // Search Input Logic (Autocomplete)
+            studentInput.addEventListener('input', function () {
+                const query = this.value.toLowerCase();
+                suggestionsBox.innerHTML = '';
+
+                // Hide table when searching/typing
+                resultsCard.style.display = 'none';
+
+                if (query.length === 0) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                // Filter unique student names
+                const uniqueNames = [...new Set(allPayments.map(p => p.studentName))]
+                    .filter(name => name && name.toLowerCase().includes(query));
+
+                if (uniqueNames.length > 0) {
+                    uniqueNames.slice(0, 10).forEach(name => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.textContent = name;
+                        item.addEventListener('click', function () {
+                            selectStudent(name);
+                        });
+                        suggestionsBox.appendChild(item);
+                    });
+                    suggestionsBox.style.display = 'block';
+                } else {
+                    const noResult = document.createElement('div');
+                    noResult.className = 'suggestion-item text-muted font-italic';
+                    noResult.textContent = 'No records found';
+                    suggestionsBox.appendChild(noResult);
+                    suggestionsBox.style.display = 'block';
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!studentInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+
+            function selectStudent(name) {
+                studentInput.value = name;
+                suggestionsBox.style.display = 'none';
+                performSearch(name);
+            }
+
+            function performSearch(name) {
+                // Filter payments for the selected student
+                // Use case-insensitive exact match or simple includes? 
+                // Better to filter by what's selected.
+
+                if (!name) return;
+
+                const filtered = allPayments.filter(p => p.studentName && p.studentName.toLowerCase() === name.toLowerCase());
+
+                // Clear and add data to DataTable
+                table.clear();
+                table.rows.add(filtered);
+                table.draw();
+
+                resultsCard.style.display = 'block';
+            }
+
+            // Search Button Click (Manual Search)
+            searchBtn.addEventListener('click', function () {
+                const query = studentInput.value;
+                if (query) {
+                    // For manual search, maybe fuzzy match
+                    const filtered = allPayments.filter(p => p.studentName && p.studentName.toLowerCase().includes(query.toLowerCase()));
+                    table.clear();
+                    table.rows.add(filtered);
+                    table.draw();
+                    resultsCard.style.display = 'block';
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>
