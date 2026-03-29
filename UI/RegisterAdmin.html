@@ -236,10 +236,12 @@
                         </div>
                     </div>
                     <div class="input-group mb-3">
-                        <input type="password" class="form-control" placeholder="Password" required>
+                        <input type="password" id="password" class="form-control" placeholder="Password"
+                            style="padding-right: 60px;" required>
                         <div class="input-group-append">
                             <div class="input-group-text">
-                                <span class="fas fa-lock"></span>
+                                <span class="fas fa-eye" id="togglePasswordIcon" style="cursor: pointer;"
+                                    onclick="togglePasswordVisibility()"></span>
                             </div>
                         </div>
                     </div>
@@ -250,12 +252,6 @@
                         <!-- /.col -->
                     </div>
                 </form>
-
-                <div class="auth-links">
-                    <p class="mb-0">
-                        <a href="login.html" class="text-center">I already have a membership</a>
-                    </p>
-                </div>
             </div>
             <!-- /.card-body -->
         </div>
@@ -273,11 +269,25 @@
     <script src="global-modal.js"></script>
 
     <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
         document.getElementById('adminSignupForm').addEventListener('submit', function (event) {
             event.preventDefault();
 
             const email = document.querySelector('input[type="email"]').value;
-            const password = document.querySelector('input[type="password"]').value;
+            const password = document.getElementById('password').value;
 
             if (!email || !password) {
                 showModal('Validation Error', 'Please enter both email and password.', 'warning');
